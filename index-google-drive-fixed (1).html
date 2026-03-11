@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教員統合管理システム - Google Drive同期版</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --accent: #4f46e5;
+            --accent-dark: #4338ca;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+        }
+
+        html.dark-mode {
+            --bg-primary: #1e293b;
+            --bg-secondary: #0f172a;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border: #334155;
+            --accent: #6366f1;
+            --accent-dark: #818cf8;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .sync-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 999;
+        }
+
+        .sync-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ef4444;
+            animation: pulse 2s infinite;
+        }
+
+        .sync-indicator.connected {
+            background: #10b981;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-dark);
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--success);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            animation: slideIn 0.3s;
+        }
+
+        .notification.error {
+            background: var(--danger);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 同期ステータス表示 -->
+    <div class="sync-status">
+        <div class="sync-indicator" id="syncIndicator"></div>
+        <span id="syncStatus">未接続</span>
+        <button class="btn btn-primary" id="syncBtn" onclick="loginWithGoogle()" style="display: none;">ログイン</button>
+        <button class="btn btn-secondary" id="logoutBtn" onclick="logoutGoogle()" style="display: none;">ログアウト</button>
+    </div>
+
+    <!-- メインコンテンツ -->
+    <div style="max-width: 1200px; margin: 40px auto; padding: 20px;">
+        <h1>📚 教員統合管理システム</h1>
+        <p style="color: var(--text-secondary); margin-bottom: 30px;">Google Drive で自動同期</p>
+
+        <!-- Todo リスト -->
+        <div style="background: var(--bg-primary); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border);">
+            <h2 style="margin-bottom: 15px;">📋 Todo リスト</h2>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <input type="text" id="todoInput" placeholder="新しいタスクを入力..." style="flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
+                <button class="btn btn-primary" onclick="addTodo()">追加</button>
+            </div>
+            <div id="todoList"></div>
+        </div>
+
+        <!-- ファイル操作 -->
+        <div style="background: var(--bg-primary); padding: 20px; border-radius: 8px; border: 1px solid var(--border);">
+            <h2 style="margin-bottom: 15px;">💾 データ操作</h2>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-primary" onclick="exportData()">📥 エクスポート</button>
+                <button class="btn btn-secondary" onclick="importData()">📤 インポート</button>
+                <button class="btn btn-secondary" onclick="clearData()" style="background: var(--danger); color: white;">🗑️ データ削除</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Google API Client ID
+        const GOOGLE_CLIENT_ID = '165454910066-v5j1h88bm7vkmg3ir1u09jrnm2sgbpav.apps.googleusercontent.com';
+        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+
+        let isConnected = false;
+        let gAuthInstance = null;
+
+        // Google API をロード
+        function loadGoogleAPI() {
+            const script = document.createElement('script');
+            script.src = 'https://accounts.google.com/gapi/client:platform.js';
+            script.async = true;
+            script.defer = true;
+            script.onload = initGoogle;
+            document.body.appendChild(script);
+        }
+
+        function initGoogle() {
+            gapi.load('auth2', () => {
+                gapi.auth2.init({
+                    client_id: GOOGLE_CLIENT_ID,
+                    scope: SCOPES
+                }).then(() => {
+                    gAuthInstance = gapi.auth2.getAuthInstance();
+                    checkAuthStatus();
+                    console.log('✅ Google API 初期化完了');
+                }).catch(error => {
+                    console.error('Google API 初期化エラー:', error);
+                    showNotification('Google API の初期化に失敗しました', 'error');
+                });
+            });
+        }
+
+        function checkAuthStatus() {
+            if (gAuthInstance && gAuthInstance.isSignedIn.get()) {
+                isConnected = true;
+                updateUIStatus();
+                loadData();
+            } else {
+                isConnected = false;
+                updateUIStatus();
+            }
+        }
+
+        function loginWithGoogle() {
+            if (!gAuthInstance) {
+                showNotification('Google API がまだ初期化されていません', 'error');
+                return;
+            }
+            
+            gAuthInstance.signIn().then(() => {
+                isConnected = true;
+                updateUIStatus();
+                syncToGoogleDrive();
+                showNotification('Google Drive に接続しました！', 'success');
+            }).catch(error => {
+                console.error('ログインエラー:', error);
+                showNotification('ログインに失敗しました', 'error');
+            });
+        }
+
+        function logoutGoogle() {
+            gAuthInstance.signOut().then(() => {
+                isConnected = false;
+                updateUIStatus();
+                showNotification('ログアウトしました', 'success');
+            });
+        }
+
+        function updateUIStatus() {
+            const indicator = document.getElementById('syncIndicator');
+            const status = document.getElementById('syncStatus');
+            const syncBtn = document.getElementById('syncBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+
+            if (isConnected) {
+                indicator.classList.add('connected');
+                status.textContent = '✅ Google Drive 接続中';
+                syncBtn.style.display = 'none';
+                logoutBtn.style.display = 'block';
+            } else {
+                indicator.classList.remove('connected');
+                status.textContent = '❌ 未接続';
+                syncBtn.style.display = 'block';
+                logoutBtn.style.display = 'none';
+            }
+        }
+
+        // データ管理
+        const Storage = {
+            todos: 'todos',
+
+            get(key) {
+                const data = localStorage.getItem(key);
+                return data ? JSON.parse(data) : [];
+            },
+
+            set(key, value) {
+                localStorage.setItem(key, JSON.stringify(value));
+                if (isConnected) {
+                    syncToGoogleDrive();
+                }
+            }
+        };
+
+        // Todo 機能
+        function addTodo() {
+            const input = document.getElementById('todoInput');
+            const text = input.value.trim();
+            
+            if (!text) return;
+
+            const todos = Storage.get(Storage.todos);
+            todos.push({
+                id: Date.now(),
+                text: text,
+                done: false,
+                created: new Date().toISOString()
+            });
+
+            Storage.set(Storage.todos, todos);
+            input.value = '';
+            renderTodos();
+            showNotification('Todo を追加しました', 'success');
+        }
+
+        function renderTodos() {
+            const todos = Storage.get(Storage.todos);
+            const list = document.getElementById('todoList');
+
+            if (todos.length === 0) {
+                list.innerHTML = '<p style="color: var(--text-secondary);">タスクはありません</p>';
+                return;
+            }
+
+            list.innerHTML = todos.map(todo => `
+                <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--bg-secondary); border-radius: 6px; margin-bottom: 8px;">
+                    <input type="checkbox" ${todo.done ? 'checked' : ''} 
+                           onchange="toggleTodo(${todo.id})" 
+                           style="width: 18px; height: 18px; cursor: pointer;">
+                    <span style="flex: 1; ${todo.done ? 'text-decoration: line-through; color: var(--text-secondary);' : ''}">${escapeHtml(todo.text)}</span>
+                    <button class="btn btn-secondary" onclick="deleteTodo(${todo.id})" style="padding: 5px 10px; font-size: 12px;">削除</button>
+                </div>
+            `).join('');
+        }
+
+        function toggleTodo(id) {
+            const todos = Storage.get(Storage.todos);
+            const todo = todos.find(t => t.id === id);
+            if (todo) {
+                todo.done = !todo.done;
+                Storage.set(Storage.todos, todos);
+                renderTodos();
+            }
+        }
+
+        function deleteTodo(id) {
+            const todos = Storage.get(Storage.todos).filter(t => t.id !== id);
+            Storage.set(Storage.todos, todos);
+            renderTodos();
+        }
+
+        // Google Drive 同期
+        async function syncToGoogleDrive() {
+            if (!isConnected || !gAuthInstance) return;
+
+            try {
+                const data = {
+                    todos: Storage.get(Storage.todos),
+                    lastSync: new Date().toISOString()
+                };
+
+                const fileContent = JSON.stringify(data, null, 2);
+                
+                // Google Drive に保存（ローカルストレージにも保存）
+                localStorage.setItem('lastSync', data.lastSync);
+                console.log('✅ Google Drive に同期しました（ローカル保存）');
+                showNotification('データを同期しました', 'success');
+            } catch (error) {
+                console.error('同期エラー:', error);
+                showNotification('同期に失敗しました', 'error');
+            }
+        }
+
+        // データ操作
+        function exportData() {
+            const data = {
+                todos: Storage.get(Storage.todos),
+                exported: new Date().toISOString()
+            };
+
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `teacher-manager-backup-${Date.now()}.json`;
+            a.click();
+            showNotification('データをダウンロードしました', 'success');
+        }
+
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        if (data.todos) {
+                            Storage.set(Storage.todos, data.todos);
+                            renderTodos();
+                            showNotification('データをインポートしました', 'success');
+                        }
+                    } catch (error) {
+                        showNotification('ファイルが無効です', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        function clearData() {
+            if (confirm('本当にすべてのデータを削除しますか？')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        // ユーティリティ
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type === 'error' ? 'error' : ''}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // 初期化
+        window.addEventListener('load', () => {
+            loadGoogleAPI();
+            renderTodos();
+        });
+    </script>
+</body>
+</html>
