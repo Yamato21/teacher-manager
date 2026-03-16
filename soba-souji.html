@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="掃除ガチャ">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%238b6914' width='100' height='100' rx='20'/><text x='50' y='68' text-anchor='middle' font-size='50'>🍜</text></svg>">
+<title>そば部 朝掃除ガチャ</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Dela+Gothic+One&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f7f3eb;--surface:#fff;--surface2:#f0ead8;--border:#ddd4be;
+  --text:#3a3020;--text-sub:#8a7d65;
+  --soba:#8b6914;--soba-soft:#fdf5e0;--soba-dark:#5c4710;
+  --red:#c0392b;--green:#2d7a4f;--green-soft:#e8f5ed;
+  --radius:14px;--shadow:0 3px 16px rgba(58,48,32,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 40px,rgba(139,105,20,0.015) 40px,rgba(139,105,20,0.015) 41px),repeating-linear-gradient(90deg,transparent,transparent 40px,rgba(139,105,20,0.015) 40px,rgba(139,105,20,0.015) 41px)}
+.app{position:relative;z-index:1;max-width:700px;margin:0 auto;padding:1rem 1rem 3rem}
+
+.header{text-align:center;padding:1.5rem 0 1rem}
+.header h1{font-family:'Dela Gothic One',sans-serif;font-size:clamp(1.4rem,5vw,2rem);color:var(--soba-dark)}
+.header p{font-size:.85rem;color:var(--text-sub);margin-top:.2rem}
+
+.card{background:var(--surface);border-radius:var(--radius);padding:1.2rem;margin-bottom:.8rem;border:1px solid var(--border);box-shadow:var(--shadow)}
+.card-title{font-size:.85rem;font-weight:900;margin-bottom:.7rem;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+.badge{font-size:.62rem;padding:2px 8px;border-radius:99px;font-weight:700;background:var(--soba-soft);color:var(--soba)}
+
+.btn{padding:.45rem 1rem;border:none;border-radius:10px;font:inherit;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s}
+.btn:active{transform:scale(.97)}
+.btn-soba{background:var(--soba);color:#fff}
+.btn-soba:hover{filter:brightness(1.1)}
+.btn-green{background:var(--green);color:#fff}
+.btn-red{background:var(--red);color:#fff}
+.btn-ghost{background:none;border:1.5px solid var(--border);color:var(--text-sub)}
+.btn-ghost:hover{border-color:var(--text-sub)}
+.btn-sm{padding:.25rem .6rem;font-size:.72rem}
+
+/* Sync bar */
+.sync-bar{display:flex;align-items:center;justify-content:space-between;padding:.5rem .8rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:.8rem;font-size:.75rem;gap:.4rem;flex-wrap:wrap}
+.sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:.3rem}
+.sync-dot.online{background:#2ecc71;animation:blink 2s infinite}
+.sync-dot.offline{background:#e74c3c}
+.sync-dot.syncing{background:#f39c12;animation:blink .5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Member */
+.member-form{display:flex;gap:.4rem;margin-bottom:.6rem}
+.member-form input{flex:1;padding:.45rem .7rem;border:1px solid var(--border);border-radius:8px;font:inherit;font-size:.85rem;background:var(--surface);color:var(--text)}
+.member-form input:focus{outline:none;border-color:var(--soba)}
+.member-chips{display:flex;flex-wrap:wrap;gap:.3rem}
+.member-chip{display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .6rem;background:var(--soba-soft);border-radius:99px;font-size:.78rem;font-weight:600;color:var(--soba);border:1px solid rgba(139,105,20,0.15)}
+.member-chip button{background:none;border:none;cursor:pointer;color:var(--soba);opacity:.5;font-size:.75rem;padding:0}
+.member-chip button:hover{opacity:1}
+.bulk-area textarea{width:100%;height:70px;border:1px solid var(--border);border-radius:8px;padding:.5rem;font:inherit;font-size:.78rem;background:var(--surface);color:var(--text);resize:vertical}
+.bulk-hint{font-size:.68rem;color:var(--text-sub);margin-bottom:.3rem}
+
+/* Settings */
+.setting-row{display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;font-size:.85rem}
+.setting-row input[type=number]{width:50px;padding:.3rem;border:1px solid var(--border);border-radius:7px;font:inherit;font-size:.85rem;text-align:center}
+.exclude-list{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.5rem}
+.exclude-item{display:flex;align-items:center;gap:.25rem;padding:.2rem .5rem;border-radius:99px;font-size:.72rem;background:var(--surface2);cursor:pointer;transition:all .15s;user-select:none}
+.exclude-item:hover{background:var(--soba-soft)}
+.exclude-item.excluded{opacity:.4;text-decoration:line-through}
+
+/* Gacha */
+.gacha-area{text-align:center;padding:1.5rem 0}
+.gacha-btn{padding:1rem 3rem;font-size:1.2rem;font-weight:900;letter-spacing:.05em;border-radius:var(--radius);border:none;cursor:pointer;font-family:inherit;background:linear-gradient(135deg,var(--soba),var(--soba-dark));color:#fff;box-shadow:0 6px 24px rgba(139,105,20,0.3);transition:all .2s;position:relative;overflow:hidden}
+.gacha-btn:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(139,105,20,0.4)}
+.gacha-btn:active{transform:translateY(0)}
+.gacha-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.gacha-btn::after{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:linear-gradient(transparent,rgba(255,255,255,0.1),transparent);transform:rotate(45deg);animation:shimmer 3s infinite}
+@keyframes shimmer{0%{transform:translateX(-100%) rotate(45deg)}100%{transform:translateX(100%) rotate(45deg)}}
+
+/* Result */
+.result-area{display:none;margin-top:1rem}
+.result-area.show{display:block}
+.slot-container{background:var(--surface);border:3px solid var(--soba);border-radius:var(--radius);padding:1.5rem;margin:1rem auto;max-width:500px;box-shadow:0 8px 40px rgba(139,105,20,0.15)}
+.slot-label{font-size:.8rem;color:var(--text-sub);margin-bottom:.5rem;font-weight:700}
+.slot-names{display:flex;flex-wrap:wrap;justify-content:center;gap:.5rem;min-height:60px;align-items:center}
+.slot-name{font-family:'Dela Gothic One',sans-serif;font-size:clamp(1.2rem,4vw,1.8rem);color:var(--soba-dark);padding:.3rem .8rem;background:var(--soba-soft);border-radius:10px;transition:all .3s}
+.slot-name.rolling{animation:roll .08s infinite;color:var(--text-sub);background:var(--surface2)}
+@keyframes roll{0%{opacity:.3;transform:translateY(-3px)}50%{opacity:1;transform:translateY(3px)}100%{opacity:.3;transform:translateY(-3px)}}
+.slot-name.decided{animation:decidePop .5s ease-out;color:#fff;background:var(--soba);box-shadow:0 4px 16px rgba(139,105,20,0.3)}
+@keyframes decidePop{0%{transform:scale(.5) rotateX(90deg);opacity:0}60%{transform:scale(1.15) rotateX(0);opacity:1}100%{transform:scale(1)}}
+.result-msg{margin-top:1rem;font-size:1rem;font-weight:700;color:var(--soba)}
+.result-date{font-size:.75rem;color:var(--text-sub);margin-top:.3rem}
+
+/* Fairness */
+.fair-row{display:flex;align-items:center;gap:.4rem;margin-bottom:.3rem;font-size:.75rem}
+.fair-name{min-width:70px;font-weight:600;text-align:right}
+.fair-bar{height:16px;border-radius:4px;background:var(--soba);transition:width .3s;min-width:2px}
+.fair-count{color:var(--text-sub);min-width:25px}
+
+/* History */
+.history-item{display:flex;align-items:flex-start;gap:.6rem;padding:.5rem .6rem;border-bottom:1px solid var(--border);font-size:.8rem}
+.history-item:last-child{border-bottom:none}
+.h-date{color:var(--text-sub);min-width:95px;flex-shrink:0;font-size:.72rem}
+.h-names{display:flex;flex-wrap:wrap;gap:.2rem}
+.h-tag{padding:.1rem .5rem;background:var(--soba-soft);border-radius:99px;font-size:.72rem;font-weight:600;color:var(--soba)}
+.h-empty{color:var(--text-sub);font-size:.8rem;padding:.5rem}
+
+/* Loading */
+.loading{position:fixed;inset:0;background:rgba(247,243,235,0.9);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.loading.hidden{display:none}
+.loading-spinner{width:40px;height:40px;border:4px solid var(--border);border-top-color:var(--soba);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{margin-top:.8rem;font-size:.85rem;color:var(--text-sub)}
+
+@media print{
+  body{background:#fff!important}body::before{display:none}
+  .card,.header,.gacha-area,.member-form,.bulk-area,.btn,.setting-row,.exclude-list,.sync-bar{display:none!important}
+  .result-area.show{display:block!important}
+  .slot-container{border:3px solid #333!important;box-shadow:none!important}
+  .slot-name.decided{background:#eee!important;color:#333!important;box-shadow:none!important}
+}
+</style>
+</head>
+<body>
+
+<div class="loading" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">データを読み込み中...</div>
+</div>
+
+<div class="app">
+  <div class="header">
+    <h1>🍜 そば部 朝掃除ガチャ</h1>
+    <p>どの端末からでもデータ共有・リアルタイム同期</p>
+  </div>
+
+  <!-- Sync Status -->
+  <div class="sync-bar">
+    <span><span class="sync-dot offline" id="syncDot"></span><span id="syncStatus">接続中...</span></span>
+    <span id="lastSync" style="color:var(--text-sub)"></span>
+  </div>
+
+  <!-- Members -->
+  <div class="card">
+    <div class="card-title">👥 部員リスト <span class="badge" id="memberCount">0人</span></div>
+    <div class="member-form">
+      <input type="text" id="newMember" placeholder="名前を入力">
+      <button class="btn btn-soba btn-sm" onclick="addMember()">追加</button>
+    </div>
+    <div class="member-chips" id="memberChips"></div>
+    <details style="margin-top:.5rem">
+      <summary style="font-size:.75rem;color:var(--text-sub);cursor:pointer">一括入力</summary>
+      <div class="bulk-area" style="margin-top:.3rem">
+        <div class="bulk-hint">1行に1人。番号付き(1,田中)もOK</div>
+        <textarea id="bulkInput" placeholder="田中太郎&#10;佐藤花子"></textarea>
+        <button class="btn btn-soba btn-sm" onclick="bulkAdd()" style="margin-top:.3rem">一括追加</button>
+      </div>
+    </details>
+  </div>
+
+  <!-- Settings -->
+  <div class="card">
+    <div class="card-title">⚙️ 設定</div>
+    <div class="setting-row">
+      <span>当番人数:</span>
+      <input type="number" id="dutyCount" value="3" min="1" max="10">
+      <span>人</span>
+    </div>
+    <div class="setting-row">
+      <label><input type="checkbox" id="optFairness" checked> 回数の少ない人を優先</label>
+    </div>
+    <div style="margin-top:.6rem">
+      <div style="font-size:.78rem;font-weight:700;margin-bottom:.3rem">⛔ 今回除外する部員</div>
+      <div class="exclude-list" id="excludeList"></div>
+    </div>
+  </div>
+
+  <!-- Gacha -->
+  <div class="gacha-area">
+    <button class="gacha-btn" onclick="startGacha()">🎰 ガチャスタート！</button>
+  </div>
+
+  <!-- Result -->
+  <div class="result-area" id="resultArea">
+    <div class="slot-container">
+      <div class="slot-label">明日の朝掃除当番</div>
+      <div class="slot-names" id="slotNames"></div>
+      <div class="result-msg" id="resultMsg"></div>
+      <div class="result-date" id="resultDate"></div>
+    </div>
+    <div style="text-align:center;margin-top:.8rem;display:flex;gap:.4rem;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-green btn-sm" onclick="saveResult()">✅ 確定して保存</button>
+      <button class="btn btn-ghost btn-sm" onclick="startGacha()">🔄 もう一回</button>
+    </div>
+  </div>
+
+  <!-- Fairness -->
+  <div class="card">
+    <div class="card-title">📊 公平性チェック <span class="badge" id="totalRounds">0回実施</span></div>
+    <div id="fairnessChart"></div>
+  </div>
+
+  <!-- History -->
+  <div class="card">
+    <div class="card-title">📋 履歴 <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="clearHistory()">クリア</button></div>
+    <div id="historyList" style="max-height:250px;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+// ===== FIREBASE CONFIG =====
+const firebaseConfig = {
+  apiKey: "AIzaSyBxGsHCgVOsMR3eYfHPsmq5OPOBcFMpHQQ",
+  authDomain: "teacher-manager-d4623.firebaseapp.com",
+  databaseURL: "https://teacher-manager-d4623-default-rtdb.firebaseio.com",
+  projectId: "teacher-manager-d4623",
+  storageBucket: "teacher-manager-d4623.appspot.com",
+  messagingSenderId: "114aborting",
+  appId: "1:1149927072:web:xxxxxx"
+};
+
+// Initialize Firebase
+const app = firebase.initializeApp(firebaseConfig, 'soba-souji');
+const db = firebase.database(app);
+const dbRef = db.ref('soba-souji');
+
+// ===== STATE =====
+let members = [];
+let excluded = new Set();
+let historyData = [];
+let dutyCounter = {};
+let lastResult = null;
+let isConnected = false;
+
+// ===== FIREBASE SYNC =====
+function initFirebase() {
+  // Connection state
+  db.ref('.info/connected').on('value', snap => {
+    const dot = document.getElementById('syncDot');
+    const status = document.getElementById('syncStatus');
+    if (snap.val() === true) {
+      dot.className = 'sync-dot online';
+      status.textContent = 'リアルタイム同期中';
+      isConnected = true;
+    } else {
+      dot.className = 'sync-dot offline';
+      status.textContent = 'オフライン（ローカルキャッシュ使用）';
+      isConnected = false;
+    }
+  });
+
+  // Listen for data changes (real-time sync!)
+  dbRef.on('value', snap => {
+    const data = snap.val();
+    if (data) {
+      members = data.members || [];
+      historyData = data.history || [];
+      dutyCounter = data.dutyCounter || {};
+      members.forEach(m => { if (!(m in dutyCounter)) dutyCounter[m] = 0; });
+    }
+    document.getElementById('lastSync').textContent = '最終同期: ' + new Date().toLocaleTimeString('ja-JP');
+    renderAll();
+    hideLoading();
+  }, err => {
+    console.warn('Firebase read error:', err);
+    loadFromCache();
+    hideLoading();
+  });
+}
+
+function saveToFirebase() {
+  const data = { members, history: historyData, dutyCounter, updatedAt: new Date().toISOString() };
+  dbRef.set(data).catch(err => console.warn('Firebase write error:', err));
+  // Also cache locally
+  localStorage.setItem('soba_cache', JSON.stringify(data));
+}
+
+function loadFromCache() {
+  try {
+    const s = JSON.parse(localStorage.getItem('soba_cache'));
+    if (s) {
+      members = s.members || [];
+      historyData = s.history || [];
+      dutyCounter = s.dutyCounter || {};
+    }
+  } catch (e) {}
+  renderAll();
+}
+
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.add('hidden');
+}
+
+// ===== MEMBERS =====
+function addMember() {
+  const inp = document.getElementById('newMember');
+  const name = inp.value.trim();
+  if (!name) return;
+  if (members.includes(name)) return alert('既に登録されています');
+  members.push(name);
+  dutyCounter[name] = dutyCounter[name] || 0;
+  inp.value = '';
+  saveToFirebase();
+}
+
+function removeMember(name) {
+  if (!confirm(name + 'を削除しますか？')) return;
+  members = members.filter(m => m !== name);
+  excluded.delete(name);
+  delete dutyCounter[name];
+  saveToFirebase();
+}
+
+function bulkAdd() {
+  const text = document.getElementById('bulkInput').value.trim();
+  if (!text) return;
+  let added = 0;
+  text.split('\n').forEach(line => {
+    line = line.trim();
+    const parts = line.split(/[,、\t]/);
+    const name = (parts.length >= 2 ? parts[parts.length - 1] : parts[0]).trim();
+    if (name && !members.includes(name)) {
+      members.push(name);
+      dutyCounter[name] = dutyCounter[name] || 0;
+      added++;
+    }
+  });
+  document.getElementById('bulkInput').value = '';
+  saveToFirebase();
+  if (added) alert(added + '人追加しました');
+}
+
+// ===== EXCLUDE =====
+function toggleExclude(name) {
+  if (excluded.has(name)) excluded.delete(name);
+  else excluded.add(name);
+  renderExcludeList();
+  renderMembers();
+}
+
+// ===== RENDER =====
+function renderAll() {
+  renderMembers();
+  renderExcludeList();
+  renderFairness();
+  renderHistory();
+}
+
+function renderMembers() {
+  document.getElementById('memberCount').textContent = members.length + '人';
+  document.getElementById('memberChips').innerHTML = members.map(m => `
+    <span class="member-chip${excluded.has(m) ? ' excluded' : ''}">${esc(m)}<button onclick="removeMember('${escAttr(m)}')">&times;</button></span>
+  `).join('');
+}
+
+function renderExcludeList() {
+  document.getElementById('excludeList').innerHTML = members.map(m => `
+    <div class="exclude-item${excluded.has(m) ? ' excluded' : ''}" onclick="toggleExclude('${escAttr(m)}')">
+      <input type="checkbox" ${excluded.has(m) ? 'checked' : ''} onclick="event.stopPropagation();toggleExclude('${escAttr(m)}')">
+      ${esc(m)}
+    </div>
+  `).join('') || '<span style="font-size:.75rem;color:var(--text-sub)">部員を登録してください</span>';
+}
+
+function renderFairness() {
+  const container = document.getElementById('fairnessChart');
+  const total = historyData.length;
+  document.getElementById('totalRounds').textContent = total + '回実施';
+  if (members.length === 0) {
+    container.innerHTML = '<p style="font-size:.78rem;color:var(--text-sub)">部員を登録すると表示されます</p>';
+    return;
+  }
+  const maxCount = Math.max(...members.map(m => dutyCounter[m] || 0), 1);
+  const sorted = [...members].sort((a, b) => (dutyCounter[b] || 0) - (dutyCounter[a] || 0));
+  container.innerHTML = sorted.map(m => {
+    const count = dutyCounter[m] || 0;
+    const pct = maxCount > 0 ? (count / maxCount * 100) : 0;
+    return `<div class="fair-row"><span class="fair-name">${esc(m)}</span><div style="flex:1"><div class="fair-bar" style="width:${Math.max(pct, 2)}%"></div></div><span class="fair-count">${count}回</span></div>`;
+  }).join('');
+}
+
+function renderHistory() {
+  const container = document.getElementById('historyList');
+  if (historyData.length === 0) {
+    container.innerHTML = '<div class="h-empty">まだ履歴がありません</div>';
+    return;
+  }
+  container.innerHTML = historyData.map(h => `
+    <div class="history-item"><span class="h-date">${h.date}</span><div class="h-names">${(h.members||[]).map(m => `<span class="h-tag">${esc(m)}</span>`).join('')}</div></div>
+  `).join('');
+}
+
+// ===== GACHA =====
+function startGacha() {
+  const count = parseInt(document.getElementById('dutyCount').value) || 3;
+  const pool = members.filter(m => !excluded.has(m));
+  if (pool.length === 0) return alert('対象の部員がいません');
+  if (pool.length < count) return alert(`対象者(${pool.length}人)が当番人数(${count}人)より少ないです`);
+
+  const useFairness = document.getElementById('optFairness').checked;
+  const selected = useFairness ? fairSelect(pool, count) : randomSelect(pool, count);
+  lastResult = selected;
+
+  const resultArea = document.getElementById('resultArea');
+  resultArea.classList.add('show');
+  const slotDiv = document.getElementById('slotNames');
+  slotDiv.innerHTML = selected.map(() => `<div class="slot-name rolling">？？？</div>`).join('');
+  const slots = slotDiv.querySelectorAll('.slot-name');
+
+  let tick = 0;
+  const interval = setInterval(() => {
+    slots.forEach(slot => {
+      if (!slot.classList.contains('decided')) {
+        slot.textContent = pool[Math.floor(Math.random() * pool.length)];
+      }
+    });
+    tick++;
+  }, 80);
+
+  selected.forEach((name, i) => {
+    setTimeout(() => {
+      slots[i].textContent = name;
+      slots[i].classList.remove('rolling');
+      slots[i].classList.add('decided');
+      playBeep();
+      if (i === selected.length - 1) {
+        clearInterval(interval);
+        document.getElementById('resultMsg').textContent = 'よろしくお願いします！🧹';
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        document.getElementById('resultDate').textContent = `${tomorrow.getMonth() + 1}/${tomorrow.getDate()} の朝掃除当番`;
+      }
+    }, 1500 + i * 600);
+  });
+
+  document.getElementById('resultMsg').textContent = '';
+  document.getElementById('resultDate').textContent = '';
+}
+
+function randomSelect(pool, count) {
+  return [...pool].sort(() => Math.random() - 0.5).slice(0, count);
+}
+
+function fairSelect(pool, count) {
+  const maxCount = Math.max(...pool.map(m => dutyCounter[m] || 0), 1);
+  const weighted = pool.map(m => ({ name: m, weight: maxCount - (dutyCounter[m] || 0) + 1 }));
+  const selected = [];
+  const remaining = [...weighted];
+  for (let i = 0; i < count && remaining.length > 0; i++) {
+    const totalWeight = remaining.reduce((s, w) => s + w.weight, 0);
+    let rand = Math.random() * totalWeight;
+    let chosen = remaining[0];
+    for (const item of remaining) { rand -= item.weight; if (rand <= 0) { chosen = item; break; } }
+    selected.push(chosen.name);
+    remaining.splice(remaining.indexOf(chosen), 1);
+  }
+  return selected;
+}
+
+function saveResult() {
+  if (!lastResult) return;
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const record = {
+    date: tomorrow.toLocaleDateString('ja-JP'),
+    created: new Date().toLocaleString('ja-JP'),
+    members: [...lastResult]
+  };
+  historyData.unshift(record);
+  if (historyData.length > 100) historyData = historyData.slice(0, 100);
+  lastResult.forEach(name => { dutyCounter[name] = (dutyCounter[name] || 0) + 1; });
+  lastResult = null;
+  saveToFirebase();
+  alert('保存しました！');
+}
+
+function clearHistory() {
+  if (!confirm('履歴と回数カウントをリセットしますか？')) return;
+  historyData = [];
+  members.forEach(m => dutyCounter[m] = 0);
+  saveToFirebase();
+}
+
+// ===== AUDIO =====
+let audioCtx = null;
+function playBeep() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.frequency.value = 880;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.15);
+  } catch (e) {}
+}
+
+// ===== UTILS =====
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function escAttr(s) { return s.replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+
+document.getElementById('newMember').addEventListener('keydown', e => { if (e.key === 'Enter') addMember(); });
+
+// ===== START =====
+initFirebase();
+</script>
+</body>
+</html>
