@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="提出物チェック">
+<title>提出物チェックシート</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Dela+Gothic+One&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+:root{--bg:#f3f5f9;--surface:#fff;--surface2:#e8ecf2;--border:#d4dae4;--text:#1a2332;--text-sub:#6b7a8d;--blue:#2563eb;--blue-soft:#eff4ff;--green:#16a34a;--green-soft:#edfcf2;--orange:#d97706;--orange-soft:#fef9ec;--red:#dc2626;--red-soft:#fef2f2;--purple:#7c3aed;--purple-soft:#f3f0ff;--radius:12px;--shadow:0 2px 12px rgba(26,35,50,.06)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+.app{max-width:1100px;margin:0 auto;padding:.8rem}
+.header{display:flex;align-items:center;justify-content:space-between;padding:.5rem 0;flex-wrap:wrap;gap:.5rem}
+.header h1{font-family:'Dela Gothic One',sans-serif;font-size:clamp(.95rem,3vw,1.2rem)}
+.header-r{display:flex;gap:.3rem;flex-wrap:wrap;align-items:center}
+.btn{padding:.4rem .8rem;border:none;border-radius:8px;font:inherit;font-size:.78rem;font-weight:700;cursor:pointer;transition:all .12s}.btn:active{transform:scale(.97)}
+.btn-p{background:var(--blue);color:#fff}.btn-g{background:var(--green);color:#fff}.btn-o{background:var(--orange);color:#fff}.btn-r{background:var(--red);color:#fff}
+.btn-ghost{background:none;border:1.5px solid var(--border);color:var(--text-sub)}.btn-ghost:hover{border-color:var(--text-sub)}
+.btn-sm{padding:.25rem .5rem;font-size:.7rem}
+.card{background:var(--surface);border-radius:var(--radius);padding:1rem;margin-bottom:.7rem;border:1px solid var(--border);box-shadow:var(--shadow)}
+.badge{font-size:.6rem;padding:2px 7px;border-radius:99px;font-weight:700;display:inline-block}
+.badge-b{background:var(--blue-soft);color:var(--blue)}.badge-g{background:var(--green-soft);color:var(--green)}.badge-o{background:var(--orange-soft);color:var(--orange)}.badge-r{background:var(--red-soft);color:var(--red)}.badge-p{background:var(--purple-soft);color:var(--purple)}
+
+.role-toggle{display:flex;background:var(--surface2);border-radius:99px;padding:3px;gap:2px}
+.role-btn{padding:.35rem .7rem;border:none;background:none;border-radius:99px;font:inherit;font-size:.75rem;font-weight:700;cursor:pointer;color:var(--text-sub);transition:all .15s}
+.role-btn.on-t{background:var(--blue);color:#fff}.role-btn.on-s{background:var(--green);color:#fff}
+
+/* Selectors */
+.sel{padding:.35rem .5rem;border:1px solid var(--border);border-radius:8px;font:inherit;font-size:.8rem;max-width:160px}
+
+/* Chip bars */
+.chip-bar{display:flex;gap:3px;flex-wrap:wrap;padding:.3rem 0;align-items:center}
+.chip{padding:.3rem .65rem;border-radius:99px;font-size:.73rem;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:var(--surface);color:var(--text-sub);transition:all .12s;white-space:nowrap}
+.chip:hover{border-color:var(--text-sub)}
+.chip.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.chip-add{border-style:dashed;background:none}
+.chip .chip-x{margin-left:4px;opacity:.4;cursor:pointer}.chip .chip-x:hover{opacity:1}
+
+/* Stats */
+.stats{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.5rem}
+.stat-pill{padding:.3rem .6rem;border-radius:99px;background:var(--surface);border:1px solid var(--border);font-size:.73rem;font-weight:600;display:flex;align-items:center;gap:.25rem}
+.stat-num{font-family:'Dela Gothic One',sans-serif;font-size:.95rem}
+
+/* Add item row */
+.add-row{display:flex;gap:.3rem;margin-bottom:.6rem;flex-wrap:wrap}
+.add-row input,.add-row select{padding:.35rem .5rem;border:1px solid var(--border);border-radius:8px;font:inherit;font-size:.8rem;background:var(--surface);color:var(--text)}
+.add-row input:focus{outline:none;border-color:var(--blue)}
+
+/* Check table */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;font-size:.76rem;width:100%;min-width:400px}
+th{background:var(--surface2);padding:5px 7px;border:1px solid var(--border);font-size:.68rem;font-weight:700;color:var(--text-sub);white-space:nowrap;position:sticky;top:0;z-index:2}
+th.rot{writing-mode:vertical-rl;text-orientation:mixed;padding:8px 3px;height:85px;font-size:.65rem;max-width:30px}
+td{padding:4px 5px;border:1px solid var(--border);text-align:center;vertical-align:middle}
+tr:hover td{background:rgba(37,99,235,.03)}
+.name-cell{text-align:left;font-weight:700;position:sticky;left:0;background:var(--surface);z-index:1;white-space:nowrap;min-width:75px;padding-left:7px}
+tr:hover .name-cell{background:rgba(37,99,235,.03)}
+.chk-cell{cursor:pointer}.chk{width:20px;height:20px;border-radius:5px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto;transition:all .1s;font-size:.65rem;user-select:none}
+.chk:hover{border-color:var(--blue)}.chk.on{background:var(--green);border-color:var(--green);color:#fff}.chk.late{background:var(--orange);border-color:var(--orange);color:#fff}
+.sum-row td{background:var(--surface2);font-weight:700;font-size:.68rem}
+.sum-bar{width:100%;height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:2px}
+.sum-fill{height:100%;border-radius:3px}
+
+/* Unsub */
+.unsub-section{margin-top:.4rem;padding:.4rem .6rem;background:var(--red-soft);border-radius:8px}
+.unsub-title{font-size:.72rem;font-weight:900;color:var(--red);margin-bottom:.2rem}
+.unsub-tags{display:flex;flex-wrap:wrap;gap:.2rem}
+.unsub-tag{padding:2px 6px;border-radius:99px;font-size:.65rem;font-weight:700;background:#fff;color:var(--red);border:1px solid rgba(220,38,38,.2)}
+
+/* Student view */
+.my-card{padding:.5rem .7rem;border-radius:8px;margin-bottom:.35rem;display:flex;align-items:center;gap:.4rem;font-size:.83rem}
+.my-card.done{background:var(--green-soft);border:1px solid rgba(22,163,74,.15)}
+.my-card.not{background:var(--red-soft);border:1px solid rgba(220,38,38,.15)}
+.my-card .my-title{font-weight:700;flex:1}
+.my-btn{padding:.3rem .6rem;border:none;border-radius:7px;font:inherit;font-size:.73rem;font-weight:700;cursor:pointer;background:var(--green);color:#fff;flex-shrink:0}
+
+/* Modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center}.modal-bg.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--radius);padding:1.2rem;max-width:550px;width:92%;max-height:85vh;overflow-y:auto}
+.modal h3{font-size:.92rem;margin-bottom:.5rem}
+.modal textarea{width:100%;height:100px;border:1px solid var(--border);border-radius:8px;padding:.5rem;font:inherit;font-size:.78rem;resize:vertical}
+.modal input[type=text]{width:100%;padding:.4rem .6rem;border:1px solid var(--border);border-radius:8px;font:inherit;font-size:.82rem}
+.modal input:focus,.modal textarea:focus{outline:none;border-color:var(--blue)}
+
+/* Settings list */
+.set-item{display:flex;align-items:center;gap:.5rem;padding:.4rem .5rem;background:var(--surface2);border-radius:8px;margin-bottom:.3rem;font-size:.82rem}
+.set-item .set-name{flex:1;font-weight:700}
+.set-tags{display:flex;flex-wrap:wrap;gap:.2rem;margin-top:.2rem}
+.set-tag{padding:1px 6px;border-radius:99px;font-size:.62rem;font-weight:600}
+.set-tag.on{background:var(--green-soft);color:var(--green)}.set-tag.off{background:var(--surface2);color:var(--text-sub)}
+
+.toast{position:fixed;top:12px;right:12px;background:var(--surface);border:2px solid var(--green);border-radius:var(--radius);padding:10px 14px;box-shadow:0 4px 20px rgba(0,0,0,.1);z-index:300;font-size:.82rem;font-weight:600;animation:si .25s ease}
+@keyframes si{from{transform:translateX(200px);opacity:0}to{transform:translateX(0);opacity:1}}
+@media print{.header-r,.add-row,.btn,.modal-bg,.toast,.role-toggle,.sel,.stats,.chip-bar{display:none!important}body{background:#fff!important;font-size:10px}th.rot{height:65px;font-size:.58rem}}
+@media(max-width:640px){.add-row{flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>✅ 提出物チェックシート</h1>
+    <div class="header-r">
+      <div class="role-toggle" id="roleToggle">
+        <button class="role-btn on-t" onclick="setRole('teacher')">👨‍🏫 先生</button>
+        <button class="role-btn" onclick="setRole('student')">👤 生徒</button>
+      </div>
+      <select class="sel" id="myClassSel" onchange="setMyClass()" style="display:none"><option value="">クラスを選択</option></select>
+      <select class="sel" id="myNameSel" onchange="setMyName()" style="display:none"><option value="">名前を選択</option></select>
+      <button class="btn btn-ghost btn-sm" id="btnSettings" onclick="openSettings()">⚙️ 設定</button>
+      <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨</button>
+    </div>
+  </div>
+
+  <!-- Teacher: class/subject filter -->
+  <div id="teacherFilters">
+    <div class="chip-bar" id="classBar"></div>
+    <div class="chip-bar" id="subjBar"></div>
+  </div>
+
+  <div class="stats" id="statsBar"></div>
+
+  <!-- Teacher: add item -->
+  <div class="add-row" id="addRow">
+    <input type="text" id="newItem" placeholder="提出物名" style="flex:1" onkeydown="if(event.key==='Enter')addItem()">
+    <input type="date" id="newDue">
+    <select id="newSubj"><option value="">教科</option></select>
+    <button class="btn btn-p" onclick="addItem()">＋ 追加</button>
+  </div>
+
+  <!-- Teacher: check table -->
+  <div class="card" id="teacherView">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;flex-wrap:wrap;gap:.3rem">
+      <div style="font-size:.83rem;font-weight:900">📋 提出チェック</div>
+      <button class="btn btn-ghost btn-sm" onclick="showDone=!showDone;renderAll()">🗂 完了分 表示/非表示</button>
+    </div>
+    <div class="tbl-wrap"><table id="checkTable"></table></div>
+    <div id="unsubArea"></div>
+  </div>
+
+  <!-- Student view -->
+  <div id="studentView" style="display:none">
+    <div class="card">
+      <div style="font-size:.83rem;font-weight:900;margin-bottom:.4rem">📋 提出状況</div>
+      <div id="myList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-bg" id="settingsModal">
+  <div class="modal">
+    <h3>⚙️ クラス・教科・名簿設定</h3>
+
+    <!-- Classes -->
+    <div style="margin-bottom:1rem">
+      <div style="font-size:.82rem;font-weight:900;margin-bottom:.4rem">🏫 クラス管理</div>
+      <div id="classSettings"></div>
+      <div style="display:flex;gap:.3rem;margin-top:.4rem">
+        <input type="text" id="newClassName" placeholder="クラス名（例：1年調理科）" style="flex:1;padding:.35rem .5rem;border:1px solid var(--border);border-radius:7px;font:inherit;font-size:.8rem">
+        <button class="btn btn-p btn-sm" onclick="addClass()">追加</button>
+      </div>
+    </div>
+
+    <!-- Subjects -->
+    <div style="margin-bottom:1rem;border-top:1px solid var(--border);padding-top:.8rem">
+      <div style="font-size:.82rem;font-weight:900;margin-bottom:.4rem">📚 教科管理（対象クラスを設定）</div>
+      <div id="subjSettings"></div>
+      <div style="display:flex;gap:.3rem;margin-top:.4rem">
+        <input type="text" id="newSubjName" placeholder="教科名（例：食品衛生）" style="flex:1;padding:.35rem .5rem;border:1px solid var(--border);border-radius:7px;font:inherit;font-size:.8rem">
+        <button class="btn btn-p btn-sm" onclick="addSubject()">追加</button>
+      </div>
+    </div>
+
+    <!-- Roster per class -->
+    <div style="border-top:1px solid var(--border);padding-top:.8rem">
+      <div style="font-size:.82rem;font-weight:900;margin-bottom:.4rem">👤 名簿（クラスを選んで編集）</div>
+      <select id="rosterClass" onchange="loadRoster()" style="width:100%;padding:.35rem .5rem;border:1px solid var(--border);border-radius:8px;font:inherit;font-size:.82rem;margin-bottom:.4rem"></select>
+      <textarea id="rosterInput" placeholder="1行に1人"></textarea>
+      <button class="btn btn-g btn-sm" onclick="saveRoster()" style="margin-top:.3rem">名簿を保存</button>
+    </div>
+
+    <div style="display:flex;gap:.3rem;margin-top:.8rem;border-top:1px solid var(--border);padding-top:.6rem">
+      <button class="btn btn-ghost" onclick="closeSettings()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== FIREBASE =====
+const fbApp=firebase.initializeApp({apiKey:"AIzaSyBxGsHCgVOsMR3eYfHPsmq5OPOBcFMpHQQ",authDomain:"teacher-manager-d4623.firebaseapp.com",databaseURL:"https://teacher-manager-d4623-default-rtdb.firebaseio.com",projectId:"teacher-manager-d4623"},'submit-check');
+const db=firebase.database(fbApp),dbRef=db.ref('submit-check');
+function toArr(v){if(Array.isArray(v))return v;if(v&&typeof v==='object')return Object.values(v);return[];}
+function toObj(v){return(v&&typeof v==='object'&&!Array.isArray(v))?v:{};}
+
+// ===== STATE =====
+let role='student';
+let isTeacherURL=false;
+let classes=[]; // ['1年調理科','2年調理科']
+let subjects=[]; // [{name:'食品衛生',classes:['1年調理科','2年調理科']}]
+let rosters={}; // {'1年調理科':['田中','佐藤']}
+let items=[]; // [{id,name,subject,due,created}]
+let checks={}; // {itemId:{studentName:'ok'|'late'}}
+
+let curClass=''; // teacher filter
+let curSubj=''; // teacher filter
+let myClass=''; // student
+let myName=''; // student
+let showDone=false;
+
+// ===== INIT =====
+function init(){
+  const params=new URLSearchParams(window.location.search);
+  isTeacherURL=params.get('mode')==='teacher';
+  if(isTeacherURL){role='teacher';}
+  else{role='student';document.getElementById('roleToggle').style.display='none';document.getElementById('btnSettings').style.display='none';}
+
+  myClass=localStorage.getItem('sc2_myclass')||'';
+  myName=localStorage.getItem('sc2_myname')||'';
+
+  dbRef.on('value',snap=>{
+    const d=snap.val();
+    if(d){
+      classes=toArr(d.classes);
+      subjects=toArr(d.subjects).map(s=>({...s,classes:toArr(s.classes)}));
+      rosters=toObj(d.rosters);
+      Object.keys(rosters).forEach(k=>{rosters[k]=toArr(rosters[k]);});
+      items=toArr(d.items);
+      checks=toObj(d.checks);
+    }
+    if(!curClass&&classes.length)curClass=classes[0];
+    renderAll();
+  },()=>{});
+
+  applyRole();
+}
+
+function saveData(){dbRef.set({classes,subjects,rosters,items,checks}).catch(e=>console.warn(e));}
+
+// ===== ROLE =====
+function setRole(r){if(r==='teacher'&&!isTeacherURL)return;role=r;applyRole();renderAll();}
+function applyRole(){
+  document.querySelectorAll('.role-btn').forEach(b=>b.classList.remove('on-t','on-s'));
+  const isT=role==='teacher';
+  document.querySelector(`[onclick="setRole('${role}')"]`).classList.add(isT?'on-t':'on-s');
+  document.getElementById('teacherView').style.display=isT?'block':'none';
+  document.getElementById('studentView').style.display=isT?'none':'block';
+  document.getElementById('addRow').style.display=isT?'flex':'none';
+  document.getElementById('teacherFilters').style.display=isT?'block':'none';
+  document.getElementById('myClassSel').style.display=isT?'none':'';
+  document.getElementById('myNameSel').style.display=isT?'none':'';
+  document.getElementById('btnSettings').style.display=isT?'':'none';
+}
+
+function setMyClass(){
+  myClass=document.getElementById('myClassSel').value;
+  localStorage.setItem('sc2_myclass',myClass);
+  myName='';localStorage.setItem('sc2_myname','');
+  updateMyNameSel();renderAll();
+}
+function setMyName(){
+  myName=document.getElementById('myNameSel').value;
+  localStorage.setItem('sc2_myname',myName);
+  renderAll();
+}
+function updateMyClassSel(){
+  const s=document.getElementById('myClassSel');
+  s.innerHTML='<option value="">クラスを選択</option>'+classes.map(c=>`<option value="${esc(c)}"${c===myClass?' selected':''}>${esc(c)}</option>`).join('');
+}
+function updateMyNameSel(){
+  const s=document.getElementById('myNameSel');
+  const list=rosters[myClass]||[];
+  s.innerHTML='<option value="">名前を選択</option>'+list.map(n=>`<option value="${esc(n)}"${n===myName?' selected':''}>${esc(n)}</option>`).join('');
+}
+
+// ===== RENDER =====
+function renderAll(){
+  renderClassBar();renderSubjBar();renderStats();updateNewSubjSel();
+  if(role==='teacher'){renderTable();renderUnsub();}
+  else{updateMyClassSel();updateMyNameSel();renderMyList();}
+}
+
+// ===== CLASS/SUBJ FILTER (teacher) =====
+function renderClassBar(){
+  document.getElementById('classBar').innerHTML='<span style="font-size:.7rem;font-weight:700;color:var(--text-sub);margin-right:.2rem">クラス:</span>'+
+    classes.map(c=>`<div class="chip${c===curClass?' active':''}" onclick="curClass='${escA(c)}';curSubj='';renderAll()">${esc(c)}</div>`).join('');
+}
+function renderSubjBar(){
+  const classSubjs=subjects.filter(s=>s.classes.includes(curClass));
+  document.getElementById('subjBar').innerHTML='<span style="font-size:.7rem;font-weight:700;color:var(--text-sub);margin-right:.2rem">教科:</span>'+
+    `<div class="chip${!curSubj?' active':''}" onclick="curSubj='';renderAll()">すべて</div>`+
+    classSubjs.map(s=>`<div class="chip${s.name===curSubj?' active':''}" onclick="curSubj='${escA(s.name)}';renderAll()">${esc(s.name)}</div>`).join('');
+}
+function updateNewSubjSel(){
+  const classSubjs=subjects.filter(s=>s.classes.includes(curClass));
+  document.getElementById('newSubj').innerHTML='<option value="">教科</option>'+classSubjs.map(s=>`<option value="${esc(s.name)}">${esc(s.name)}</option>`).join('');
+}
+
+// ===== ITEMS =====
+function getVisibleItems(){
+  let list=items;
+  // Filter by class: items whose subject belongs to curClass
+  const classSubjNames=subjects.filter(s=>s.classes.includes(curClass)).map(s=>s.name);
+  list=list.filter(it=>!it.subject||classSubjNames.includes(it.subject));
+  if(curSubj)list=list.filter(it=>it.subject===curSubj);
+  return list;
+}
+function getClassStudents(){return rosters[curClass]||[];}
+
+function addItem(){
+  const name=document.getElementById('newItem').value.trim();
+  if(!name)return alert('提出物名を入力');
+  items.push({id:'it_'+Date.now(),name,subject:document.getElementById('newSubj').value,due:document.getElementById('newDue').value,created:new Date().toISOString()});
+  document.getElementById('newItem').value='';document.getElementById('newDue').value='';
+  saveData();toast('✅ 追加しました');
+}
+function deleteItem(id){if(!confirm('削除しますか？'))return;items=items.filter(i=>i.id!==id);delete checks[id];saveData();}
+
+// ===== CHECKS =====
+function cycleCheck(itemId,student){
+  if(!checks[itemId])checks[itemId]={};
+  const cur=checks[itemId][student]||null;
+  if(!cur)checks[itemId][student]='ok';
+  else if(cur==='ok')checks[itemId][student]='late';
+  else delete checks[itemId][student];
+  saveData();
+}
+function getCheck(itemId,student){return checks[itemId]?.[student]||null;}
+function selfSubmit(itemId){if(!myName)return;if(!checks[itemId])checks[itemId]={};checks[itemId][myName]='ok';saveData();toast('✅ 提出報告しました');}
+
+// ===== STATS =====
+function renderStats(){
+  const bar=document.getElementById('statsBar');
+  if(role==='teacher'){
+    const vis=getVisibleItems();const studs=getClassStudents();
+    const totalCells=vis.length*studs.length;
+    let ok=0,late=0;
+    vis.forEach(it=>{studs.forEach(s=>{const c=getCheck(it.id,s);if(c==='ok')ok++;if(c==='late')late++;});});
+    const pct=totalCells?((ok+late)/totalCells*100):0;
+    bar.innerHTML=`<div class="stat-pill"><span class="stat-num" style="color:var(--blue)">${vis.length}</span> 提出物</div>
+      <div class="stat-pill"><span class="stat-num" style="color:var(--green)">${ok}</span> ✓</div>
+      <div class="stat-pill"><span class="stat-num" style="color:var(--orange)">${late}</span> 遅延</div>
+      <div class="stat-pill"><span class="stat-num">${pct.toFixed(0)}%</span> 回収率</div>`;
+  }else{
+    if(!myName){bar.innerHTML='';return;}
+    const mySubjs=subjects.filter(s=>s.classes.includes(myClass)).map(s=>s.name);
+    const myItems=items.filter(it=>!it.subject||mySubjs.includes(it.subject));
+    const done=myItems.filter(it=>getCheck(it.id,myName)).length;
+    bar.innerHTML=`<div class="stat-pill"><span class="stat-num" style="color:var(--blue)">${myItems.length}</span> 提出物</div>
+      <div class="stat-pill"><span class="stat-num" style="color:var(--green)">${done}</span> 提出済</div>
+      <div class="stat-pill"><span class="stat-num" style="color:var(--red)">${myItems.length-done}</span> 未提出</div>`;
+  }
+}
+
+// ===== TEACHER TABLE =====
+function renderTable(){
+  const tbl=document.getElementById('checkTable');
+  const studs=getClassStudents();
+  let vis=getVisibleItems();
+  if(!showDone)vis=vis.filter(it=>!studs.every(s=>getCheck(it.id,s)));
+  if(!vis.length&&!showDone)vis=getVisibleItems(); // show all if everything done
+
+  if(!studs.length||!vis.length){
+    tbl.innerHTML=`<tr><td style="padding:2rem;text-align:center;color:var(--text-sub)">${!studs.length?'⚙️ 設定からクラス・名簿を登録':'提出物を追加してください'}</td></tr>`;return;
+  }
+
+  let h='<thead><tr><th style="min-width:75px">名前</th>';
+  vis.forEach(it=>{
+    const due=it.due?fmtDate(it.due):'';
+    const od=it.due&&isOverdue(it.due);
+    h+=`<th class="rot"><span style="${od?'color:var(--red)':''}">${esc(it.name)}${it.subject?' ('+esc(it.subject)+')':''}${due?' '+due:''}</span></th>`;
+  });
+  h+='<th>率</th></tr></thead>';
+
+  let b='<tbody>';
+  studs.forEach(s=>{
+    let cnt=0;
+    b+='<tr>';b+=`<td class="name-cell">${esc(s)}</td>`;
+    vis.forEach(it=>{
+      const c=getCheck(it.id,s);if(c)cnt++;
+      const cls=c==='ok'?'on':c==='late'?'late':'';
+      b+=`<td class="chk-cell" onclick="cycleCheck('${it.id}','${escA(s)}')"><div class="chk ${cls}">${c==='ok'?'✓':c==='late'?'遅':''}</div></td>`;
+    });
+    const pct=vis.length?(cnt/vis.length*100):0;
+    const pc=pct>=100?'var(--green)':pct>=50?'var(--blue)':'var(--red)';
+    b+=`<td style="font-size:.68rem;font-weight:700;color:${pc}">${pct.toFixed(0)}%</td></tr>`;
+  });
+
+  // Summary
+  b+='<tr class="sum-row"><td class="name-cell" style="background:var(--surface2)">回収率</td>';
+  vis.forEach(it=>{
+    const cnt=studs.filter(s=>getCheck(it.id,s)).length;
+    const pct=studs.length?(cnt/studs.length*100):0;
+    const c=pct>=100?'var(--green)':pct>=50?'var(--blue)':'var(--red)';
+    b+=`<td><div style="font-size:.65rem;font-weight:700;color:${c}">${cnt}/${studs.length}</div><div class="sum-bar"><div class="sum-fill" style="width:${pct}%;background:${c}"></div></div></td>`;
+  });
+  b+='<td></td></tr>';
+
+  // Delete row
+  b+='<tr><td></td>';vis.forEach(it=>{b+=`<td><button class="btn btn-r btn-sm" onclick="deleteItem('${it.id}')" style="font-size:.55rem;padding:1px 4px">✕</button></td>`;});
+  b+='<td></td></tr></tbody>';
+  tbl.innerHTML=h+b;
+}
+
+function renderUnsub(){
+  const area=document.getElementById('unsubArea');
+  const studs=getClassStudents();
+  const vis=getVisibleItems().filter(it=>!studs.every(s=>getCheck(it.id,s)));
+  if(!vis.length||!studs.length){area.innerHTML='';return;}
+  area.innerHTML=vis.map(it=>{
+    const unsub=studs.filter(s=>!getCheck(it.id,s));
+    if(!unsub.length)return'';
+    return`<div class="unsub-section"><div class="unsub-title">📢 ${esc(it.name)} — 未提出 ${unsub.length}人</div><div class="unsub-tags">${unsub.map(s=>`<span class="unsub-tag">${esc(s)}</span>`).join('')}</div></div>`;
+  }).join('');
+}
+
+// ===== STUDENT VIEW =====
+function renderMyList(){
+  const el=document.getElementById('myList');
+  if(!myName){el.innerHTML='<div style="text-align:center;padding:1rem;color:var(--text-sub)">クラスと名前を選択してください</div>';return;}
+  const mySubjs=subjects.filter(s=>s.classes.includes(myClass)).map(s=>s.name);
+  const myItems=items.filter(it=>!it.subject||mySubjs.includes(it.subject));
+  if(!myItems.length){el.innerHTML='<div style="text-align:center;padding:1rem;color:var(--text-sub)">提出物はまだありません</div>';return;}
+  el.innerHTML=myItems.map(it=>{
+    const c=getCheck(it.id,myName);const done=!!c;
+    const due=it.due?fmtDate(it.due):'';
+    const od=it.due&&isOverdue(it.due)&&!done;
+    return`<div class="my-card ${done?'done':'not'}">
+      <div class="my-title">${esc(it.name)}${it.subject?` <span class="badge badge-b">${esc(it.subject)}</span>`:''}${due?` <span style="font-size:.7rem;color:var(--text-sub)">${due}</span>`:''}${od?' <span class="badge badge-r">期限切れ</span>':''}</div>
+      <span style="font-weight:900;color:${done?'var(--green)':'var(--red)'}">  ${c==='ok'?'✅':c==='late'?'⚠️':'❌'}</span>
+      ${!done?`<button class="my-btn" onclick="selfSubmit('${it.id}')">📤 提出</button>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ===== SETTINGS =====
+function openSettings(){
+  document.getElementById('settingsModal').classList.add('open');
+  renderClassSettings();renderSubjSettings();updateRosterClassSel();
+}
+function closeSettings(){document.getElementById('settingsModal').classList.remove('open');}
+
+// Classes
+function renderClassSettings(){
+  document.getElementById('classSettings').innerHTML=classes.map((c,i)=>
+    `<div class="set-item"><span class="set-name">${esc(c)}</span><span style="font-size:.68rem;color:var(--text-sub)">${(rosters[c]||[]).length}人</span><button class="btn btn-r btn-sm" onclick="removeClass(${i})">✕</button></div>`
+  ).join('')||'<div style="font-size:.78rem;color:var(--text-sub)">クラスを追加してください</div>';
+}
+function addClass(){
+  const name=document.getElementById('newClassName').value.trim();
+  if(!name||classes.includes(name))return;
+  classes.push(name);rosters[name]=rosters[name]||[];
+  document.getElementById('newClassName').value='';
+  if(!curClass)curClass=name;
+  saveData();renderClassSettings();renderSubjSettings();updateRosterClassSel();renderAll();
+}
+function removeClass(i){
+  if(!confirm(classes[i]+'を削除しますか？'))return;
+  const name=classes[i];classes.splice(i,1);delete rosters[name];
+  subjects.forEach(s=>{s.classes=s.classes.filter(c=>c!==name);});
+  if(curClass===name)curClass=classes[0]||'';
+  saveData();renderClassSettings();renderSubjSettings();updateRosterClassSel();renderAll();
+}
+
+// Subjects
+function renderSubjSettings(){
+  document.getElementById('subjSettings').innerHTML=subjects.map((s,i)=>{
+    const classTags=classes.map(c=>{
+      const on=s.classes.includes(c);
+      return`<span class="set-tag ${on?'on':'off'}" style="cursor:pointer" onclick="toggleSubjClass(${i},'${escA(c)}')">${esc(c)}</span>`;
+    }).join('');
+    return`<div class="set-item" style="flex-wrap:wrap"><span class="set-name">${esc(s.name)}</span><div class="set-tags">${classTags||'<span style="font-size:.65rem;color:var(--text-sub)">クラスを先に追加</span>'}</div><button class="btn btn-r btn-sm" onclick="removeSubject(${i})">✕</button></div>`;
+  }).join('')||'<div style="font-size:.78rem;color:var(--text-sub)">教科を追加してください</div>';
+}
+function addSubject(){
+  const name=document.getElementById('newSubjName').value.trim();
+  if(!name||subjects.some(s=>s.name===name))return;
+  subjects.push({name,classes:[...classes]}); // default: all classes
+  document.getElementById('newSubjName').value='';
+  saveData();renderSubjSettings();renderAll();
+}
+function removeSubject(i){
+  if(!confirm(subjects[i].name+'を削除しますか？'))return;
+  subjects.splice(i,1);saveData();renderSubjSettings();renderAll();
+}
+function toggleSubjClass(si,cls){
+  const s=subjects[si];
+  if(s.classes.includes(cls))s.classes=s.classes.filter(c=>c!==cls);
+  else s.classes.push(cls);
+  saveData();renderSubjSettings();renderAll();
+}
+
+// Rosters
+function updateRosterClassSel(){
+  const sel=document.getElementById('rosterClass');
+  sel.innerHTML=classes.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')||'<option value="">クラスを先に追加</option>';
+  loadRoster();
+}
+function loadRoster(){
+  const cls=document.getElementById('rosterClass').value;
+  document.getElementById('rosterInput').value=(rosters[cls]||[]).join('\n');
+}
+function saveRoster(){
+  const cls=document.getElementById('rosterClass').value;
+  if(!cls)return;
+  rosters[cls]=document.getElementById('rosterInput').value.split('\n').map(l=>{
+    l=l.trim();const p=l.split(/[,、\t]/);return(p.length>=2?p[p.length-1]:p[0]).trim();
+  }).filter(s=>s);
+  saveData();renderClassSettings();toast(rosters[cls].length+'人保存');
+}
+
+// ===== UTILS =====
+function isOverdue(due){const n=new Date();n.setHours(0,0,0,0);return new Date(due+'T23:59:59')<n;}
+function fmtDate(ds){if(!ds)return'';const d=new Date(ds+'T00:00:00');return`${d.getMonth()+1}/${d.getDate()}`;}
+function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function escA(s){return(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');}
+function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300);},2500);}
+document.getElementById('settingsModal').addEventListener('click',e=>{if(e.target.id==='settingsModal')closeSettings();});
+
+init();
+</script>
+</body>
+</html>
