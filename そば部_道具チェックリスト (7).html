@@ -1,0 +1,2127 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>そば部 道具チェックリスト</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, onValue, set } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+try {
+  const cfg = JSON.parse(localStorage.getItem('soba-fb-cfg')||'null');
+  if(cfg?.databaseURL){
+    const app = initializeApp(cfg);
+    const db  = getDatabase(app);
+    window._db=db; window._fbRef=ref; window._fbOnValue=onValue; window._fbSet=set;
+    window._firebaseReady=true;
+  } else { window._firebaseReady=false; }
+} catch(e){ window._firebaseReady=false; }
+document.dispatchEvent(new Event('firebase-ready'));
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --soba:#5C3D11;--soba2:#8B5E2D;--soba-light:#FDF6ED;--soba-mid:#F0E4CC;
+  --sale:#1A5E3A;--sale2:#2E8B57;--sale-light:#EDF7F2;--sale-mid:#B8E0CB;
+  --inst:#1A3E7C;--inst2:#2E60BF;--inst-light:#EEF3FB;--inst-mid:#B8CCF0;
+  --other:#5B21B6;--other2:#7C3AED;--other-light:#F5F0FF;--other-mid:#D4C5F5;
+  --border:#DDD5C8;--bg:#F5F0E8;--card:#FFF;--text:#2C1A0A;--muted:#7A6248;
+  --shadow:0 2px 14px rgba(92,61,17,.11);--red:#B91C1C;
+}
+html,body{height:100%;font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+body{display:flex;flex-direction:column;overflow:hidden}
+
+/* topbar */
+.topbar{background:var(--soba);color:#fff;padding:0 18px;height:54px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 10px rgba(0,0,0,.25);position:relative;z-index:200}
+.tlogo{font-size:22px}
+.ttitle{font-size:15px;font-weight:900;letter-spacing:.04em;line-height:1.2}
+.ttitle small{display:block;font-size:10px;font-weight:400;opacity:.7;letter-spacing:.05em}
+.spacer{flex:1}
+.sync-pill{display:flex;align-items:center;gap:5px;background:rgba(0,0,0,.2);border-radius:12px;padding:3px 10px;font-size:11px}
+.sdot{width:7px;height:7px;border-radius:50%;background:#FCD34D;flex-shrink:0;transition:.3s}
+.sdot.on{background:#4ADE80;box-shadow:0 0 5px #4ADE80}
+.tbtn{display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;border:none;font-family:inherit;background:rgba(255,255,255,.15);color:#fff;transition:.15s;white-space:nowrap}
+.tbtn:hover{background:rgba(255,255,255,.28)}
+.tbtn.wh{background:#fff;color:var(--soba)}.tbtn.wh:hover{background:var(--soba-light)}
+
+/* breadcrumb */
+.bc{display:flex;align-items:center;gap:6px;padding:7px 20px;background:var(--soba-mid);border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);flex-shrink:0}
+.bc-link{cursor:pointer;color:var(--soba2);font-weight:700}.bc-link:hover{text-decoration:underline}
+.bc-sep{opacity:.5}.bc-cur{color:var(--text);font-weight:700}
+
+/* layout */
+.app{display:flex;flex:1;min-height:0;overflow:hidden}
+.sidebar{width:240px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;min-height:0}
+.main{flex:1;overflow-y:auto;min-height:0}
+
+/* sidebar */
+.sb-head{padding:12px 14px 8px;border-bottom:1px solid var(--border)}
+.sb-head h3{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.07em}
+.sb-scroll{flex:1;overflow-y:auto;padding:8px 10px}
+.ev-item{display:flex;align-items:center;gap:7px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13px;transition:.15s;border:1.5px solid transparent;margin-bottom:3px}
+.ev-item:hover{background:var(--soba-light)}.ev-item.active{background:var(--soba-light);border-color:var(--soba2);font-weight:700}
+.ev-dot{width:8px;height:8px;border-radius:50%;background:var(--soba2);flex-shrink:0}
+.ev-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ev-date{font-size:10px;color:var(--muted);flex-shrink:0}
+.ev-del{background:none;border:none;color:transparent;cursor:pointer;font-size:13px;padding:1px 4px;border-radius:3px;transition:.15s;flex-shrink:0}
+.ev-item:hover .ev-del{color:#CBD5E1}.ev-del:hover{color:var(--red)!important;background:#FEF2F2}
+.sb-add{padding:10px;border-top:1px solid var(--border);flex-shrink:0}
+.sb-input{border:1.5px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff;width:100%;display:block;margin-bottom:4px}
+.sb-input:focus{border-color:var(--soba2)}
+.sb-add-row{display:flex;gap:5px;margin-top:4px}
+.sb-add-btn{background:var(--soba);color:#fff;border:none;border-radius:6px;padding:7px 12px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:700;flex-shrink:0}
+.sb-prog{padding:8px 14px 6px;border-top:1px solid var(--border);flex-shrink:0}
+.prog-row{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:3px}
+.prog-track{background:#EDE8DF;border-radius:4px;height:5px;overflow:hidden;margin-bottom:5px}
+.prog-fill{height:5px;border-radius:4px;transition:.4s}
+.prog-fill.sale{background:var(--sale2)}.prog-fill.inst{background:var(--inst2)}.prog-fill.other{background:var(--other2)}
+
+/* welcome */
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;padding:40px;text-align:center}
+.welcome .big{font-size:56px;margin-bottom:6px}
+.welcome h2{font-size:20px;font-weight:900;color:var(--soba)}
+.welcome p{font-size:14px;color:var(--muted);line-height:1.7}
+
+/* type select */
+.type-screen{padding:28px 28px}
+.type-screen>h2{font-size:20px;font-weight:900;color:var(--soba);margin-bottom:4px}
+.type-screen>p{font-size:13px;color:var(--muted);margin-bottom:24px}
+.type-cards{display:flex;gap:14px;flex-wrap:wrap}
+.type-card{flex:1;min-width:190px;max-width:300px;border-radius:14px;border:2.5px solid var(--border);padding:26px 20px;cursor:pointer;transition:.2s;background:var(--card);box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center}
+.type-card:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(0,0,0,.13)}
+.type-card.sale:hover,.type-card.sale.sel{border-color:var(--sale2);background:var(--sale-light)}
+.type-card.inst:hover,.type-card.inst.sel{border-color:var(--inst2);background:var(--inst-light)}
+.type-card.other:hover,.type-card.other.sel{border-color:var(--other2);background:var(--other-light)}
+.tc-icon{font-size:44px;line-height:1}
+.tc-name{font-size:18px;font-weight:900}
+.type-card.sale .tc-name{color:var(--sale)}.type-card.inst .tc-name{color:var(--inst2)}.type-card.other .tc-name{color:var(--other2)}
+.tc-desc{font-size:12px;color:var(--muted);line-height:1.6}
+.tc-roles{display:flex;flex-wrap:wrap;gap:4px;justify-content:center}
+.tc-pill{padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}
+.sale .tc-pill{background:var(--sale-mid);color:var(--sale)}.inst .tc-pill{background:var(--inst-mid);color:var(--inst2)}.other .tc-pill{background:var(--other-mid);color:var(--other2)}
+.tc-prog-wrap{width:100%;margin-top:6px}
+.tc-prog-label{font-size:11px;color:var(--muted);text-align:right;margin-bottom:2px}
+.tc-prog-bar{background:#E5E5E5;border-radius:4px;height:6px;overflow:hidden}
+.tc-prog-fill{height:6px;border-radius:4px;transition:.4s}
+
+/* checklist */
+.check-screen{padding:18px 22px}
+.role-tabs{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
+.rtab{padding:6px 14px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:500;border:1.5px solid var(--border);background:var(--card);color:var(--muted);transition:.15s;display:flex;align-items:center;gap:5px}
+.rtab:hover{border-color:var(--soba2)}
+.rtab.active.sale{background:var(--sale2);color:#fff;border-color:var(--sale2)}
+.rtab.active.inst{background:var(--inst2);color:#fff;border-color:var(--inst2)}
+.rtab.active.other{background:var(--other2);color:#fff;border-color:var(--other2)}
+.rbadge{font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;background:rgba(0,0,0,.1)}
+.rtab.active .rbadge{background:rgba(255,255,255,.3)}
+.sec-bar{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:8px;margin-bottom:12px}
+.sec-bar.sale{background:var(--sale-mid)}.sec-bar.inst{background:var(--inst-mid)}.sec-bar.other{background:var(--other-mid)}
+.sec-bar h3{flex:1;font-size:15px;font-weight:900}
+.sec-bar.sale h3{color:var(--sale)}.sec-bar.inst h3{color:var(--inst2)}.sec-bar.other h3{color:var(--other2)}
+.sec-count{font-size:12px;font-weight:500;opacity:.8}
+.reset-btn{background:rgba(0,0,0,.1);border:none;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit;font-weight:700}
+.items-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:9px;margin-bottom:14px}
+.item-card{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:.18s;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.item-card:hover{box-shadow:0 3px 12px rgba(0,0,0,.10);transform:translateY(-1px)}
+.item-card.checked.sale{background:var(--sale-light);border-color:var(--sale2)}
+.item-card.checked.inst{background:var(--inst-light);border-color:var(--inst2)}
+.item-card.checked.other{background:var(--other-light);border-color:var(--other2)}
+.item-chk{width:26px;height:26px;border-radius:6px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;font-size:14px;background:#fff}
+.item-card.checked.sale .item-chk{background:var(--sale2);border-color:var(--sale2);color:#fff}
+.item-card.checked.inst .item-chk{background:var(--inst2);border-color:var(--inst2);color:#fff}
+.item-card.checked.other .item-chk{background:var(--other2);border-color:var(--other2);color:#fff}
+.item-body{flex:1;min-width:0}
+.item-name{font-size:13px;font-weight:700;line-height:1.3}
+.item-qty{font-size:11px;color:var(--muted);margin-top:1px}
+.item-by{font-size:10px;margin-top:2px;font-weight:500}
+.item-card.checked.sale .item-by{color:var(--sale)}.item-card.checked.inst .item-by{color:var(--inst2)}.item-card.checked.other .item-by{color:var(--other2)}
+.item-acts{display:flex;gap:2px;flex-shrink:0}
+.ia{background:none;border:none;cursor:pointer;padding:3px 5px;border-radius:4px;font-size:13px;color:#C8BFB3;transition:.15s}
+.ia:hover{background:var(--soba-mid);color:var(--soba2)}
+.add-row{display:flex;gap:7px;padding:11px 13px;background:var(--soba-light);border:1.5px dashed var(--border);border-radius:10px;margin-bottom:24px;flex-wrap:wrap}
+.add-row input{border:1.5px solid var(--border);border-radius:6px;padding:7px 9px;font-size:13px;font-family:inherit;background:#fff;outline:none;transition:.15s}
+.add-row input:focus{border-color:var(--soba2)}
+.add-row .ni{flex:1;min-width:130px}.add-row .qi{width:130px}
+.add-btn{background:var(--soba);color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+
+/* master */
+.master-screen{padding:20px 24px}
+.mtype-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.mtype-tab{padding:7px 16px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:700;border:1.5px solid var(--border);background:var(--card);color:var(--muted);transition:.15s}
+.mtype-tab.active.sale{background:var(--sale2);color:#fff;border-color:var(--sale2)}
+.mtype-tab.active.inst{background:var(--inst2);color:#fff;border-color:var(--inst2)}
+.mtype-tab.active.other{background:var(--other2);color:#fff;border-color:var(--other2)}
+.mrole-block{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px}
+.mrole-title{font-size:14px;font-weight:900;margin-bottom:8px}
+.mrole-title.sale{color:var(--sale)}.mrole-title.inst{color:var(--inst2)}.mrole-title.other{color:var(--other2)}
+.mrow{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #F0EBE0}
+.mrow:last-of-type{border-bottom:none}
+.mrow-name{flex:1;font-size:13px}.mrow-qty{font-size:12px;color:var(--muted);min-width:80px}
+
+/* history */
+.hist-screen{padding:20px 24px}
+.hist-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:13px 16px;display:flex;align-items:center;gap:12px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.hc-info{flex:1;min-width:0}.hc-title{font-size:14px;font-weight:700}.hc-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.hdel{background:#FEF2F2;color:var(--red);border:none;border-radius:6px;padding:5px 11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+
+/* modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:24px;width:400px;max-width:92vw;box-shadow:0 8px 40px rgba(0,0,0,.22)}
+.modal h3{font-size:16px;font-weight:900;margin-bottom:16px;color:var(--soba)}
+.modal label{font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:3px}
+.modal input,.modal textarea{width:100%;border:1.5px solid var(--border);border-radius:7px;padding:8px 11px;font-size:13px;font-family:inherit;outline:none;margin-bottom:12px}
+.modal input:focus{border-color:var(--soba2)}
+.modal-btns{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+.mbtn{padding:8px 20px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:inherit}
+.mbtn.cancel{background:#F0EBE0;color:var(--soba2)}.mbtn.ok{background:var(--soba);color:#fff}.mbtn.ok:hover{background:var(--soba2)}
+
+/* ── Approval flow ── */
+.apv-section{
+  background:var(--card);border:1.5px solid var(--border);border-radius:12px;
+  padding:16px 18px;margin-bottom:20px;box-shadow:var(--shadow)
+}
+.apv-title{font-size:13px;font-weight:900;color:var(--soba);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.apv-flow{display:flex;align-items:stretch;gap:0}
+.apv-step{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:12px 8px;border-radius:10px;border:1.5px solid var(--border);
+  background:#fff;transition:.2s;position:relative
+}
+.apv-step.done{border-color:transparent}
+.apv-step.done.role-step{background:var(--sale-light);border-color:var(--sale2)}
+.apv-step.done.captain-step{background:var(--inst-light);border-color:var(--inst2)}
+.apv-step.done.advisor-step{background:#FFF7E6;border-color:#D97706}
+.apv-arrow{display:flex;align-items:center;padding:0 4px;font-size:18px;color:var(--border);flex-shrink:0;align-self:center}
+.apv-step-icon{font-size:24px;line-height:1}
+.apv-step-label{font-size:11px;font-weight:700;color:var(--muted);text-align:center}
+.apv-step.done.role-step .apv-step-label{color:var(--sale)}
+.apv-step.done.captain-step .apv-step-label{color:var(--inst2)}
+.apv-step.done.advisor-step .apv-step-label{color:#D97706}
+.apv-step-info{font-size:10px;color:var(--muted);text-align:center;line-height:1.4}
+.apv-step.done .apv-step-info{font-weight:500}
+.apv-btn{
+  padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:none;
+  font-family:inherit;transition:.15s;white-space:nowrap;margin-top:2px
+}
+.apv-btn.role-btn{background:var(--sale2);color:#fff}
+.apv-btn.captain-btn{background:var(--inst2);color:#fff}
+.apv-btn.advisor-btn{background:#D97706;color:#fff}
+.apv-btn:disabled{background:#CCC;cursor:not-allowed}
+.apv-btn.revoke{background:#FEF2F2;color:var(--red);font-size:10px;padding:3px 8px}
+.apv-lock-msg{font-size:11px;color:var(--muted);text-align:center;margin-top:8px;padding:6px;background:#F5F0E8;border-radius:6px}
+/* ── toast ── */
+.toast{position:fixed;bottom:20px;right:20px;background:#2C1A0A;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transition:.3s;pointer-events:none;z-index:999;max-width:320px}
+.toast.show{opacity:1}
+/* ── 部員名簿 ── */
+.member-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:16px}
+.member-card{background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;gap:12px;box-shadow:var(--shadow);transition:.15s}
+.member-card:hover{box-shadow:0 4px 16px rgba(92,61,17,.13);transform:translateY(-1px)}
+.member-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;flex-shrink:0;color:#fff}
+.member-avatar.grade-1{background:#2E8B57}.member-avatar.grade-2{background:#2E60BF}
+.member-avatar.grade-3{background:#D97706}.member-avatar.grade-顧問{background:#5C3D11}
+.member-avatar.grade-OBOG{background:#7C3AED}
+.member-info{flex:1;min-width:0}
+.member-name{font-size:14px;font-weight:900;display:flex;align-items:center;gap:6px}
+.member-kana{font-size:10px;color:var(--muted);margin-top:1px}
+.member-meta{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.member-tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px}
+.member-tag.grade{background:var(--soba-mid);color:var(--soba)}
+.member-tag.role-部長{background:#FEF3C7;color:#D97706}
+.member-tag.role-副部長{background:#DBEAFE;color:#1E40AF}
+.member-tag.role-顧問{background:var(--soba-mid);color:var(--soba)}
+.member-tag.role-other{background:#F3F4F6;color:#374151}
+.member-contact{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.6}
+.member-note{font-size:11px;color:var(--muted);margin-top:3px;font-style:italic}
+.member-acts{display:flex;flex-direction:column;gap:4px;flex-shrink:0}
+.member-filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.mf-btn{padding:5px 13px;border-radius:14px;cursor:pointer;font-size:12px;font-weight:500;border:1.5px solid var(--border);background:var(--card);color:var(--muted);transition:.15s;font-family:inherit}
+.mf-btn.active{background:var(--soba);color:#fff;border-color:var(--soba)}
+.member-stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.mstat{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 14px;text-align:center;min-width:70px}
+.mstat-num{font-size:20px;font-weight:900;color:var(--soba)}
+.mstat-label{font-size:10px;color:var(--muted);margin-top:1px}
+
+/* ── 不足・破損レポートボタン ── */
+.report-fab{
+  position:fixed;bottom:24px;right:24px;z-index:300;
+  background:var(--red);color:#fff;border:none;border-radius:50px;
+  padding:11px 20px;font-size:13px;font-weight:700;cursor:pointer;
+  font-family:inherit;box-shadow:0 4px 16px rgba(185,28,28,.4);
+  display:flex;align-items:center;gap:7px;transition:.15s
+}
+.report-fab:hover{background:#991B1B;transform:translateY(-2px)}
+
+/* ── 汎用ページ ── */
+.page-screen{padding:20px 24px;max-width:900px}
+.page-screen h2{font-size:18px;font-weight:900;color:var(--soba);margin-bottom:4px}
+.page-screen .page-sub{font-size:13px;color:var(--muted);margin-bottom:20px}
+
+/* ── 役割分担 ── */
+.roster-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:16px}
+.roster-card{background:var(--card);border:1.5px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
+.roster-head{padding:9px 14px;font-size:13px;font-weight:900;display:flex;align-items:center;gap:7px}
+.roster-head.sale{background:var(--sale-mid);color:var(--sale)}
+.roster-head.inst{background:var(--inst-mid);color:var(--inst2)}
+.roster-head.other{background:var(--other-mid);color:var(--other2)}
+.roster-member-list{padding:10px 14px;display:flex;flex-direction:column;gap:5px}
+.roster-member{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;background:var(--bg)}
+.roster-member-name{font-size:13px;font-weight:500;flex:1}
+.roster-member-note{font-size:11px;color:var(--muted)}
+.roster-add-row{display:flex;gap:6px;padding:8px 14px;border-top:1px solid var(--border)}
+.roster-add-row input{flex:1;border:1.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;outline:none}
+.roster-add-row input:focus{border-color:var(--soba2)}
+.roster-add-btn{background:var(--soba);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap}
+
+/* ── 消耗品 ── */
+.consumable-table{width:100%;border-collapse:collapse;margin-bottom:16px}
+.consumable-table th{background:var(--soba);color:#fff;padding:8px 12px;font-size:12px;font-weight:700;text-align:left}
+.consumable-table td{padding:8px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+.consumable-table tr:nth-child(even) td{background:#FAF7F2}
+.consumable-table td input{border:1.5px solid var(--border);border-radius:5px;padding:4px 7px;font-size:12px;font-family:inherit;width:80px;text-align:center;outline:none}
+.consumable-table td input:focus{border-color:var(--soba2)}
+.con-avg{font-size:11px;color:var(--muted);margin-top:2px}
+.con-trend{font-size:12px;font-weight:700}
+.con-trend.up{color:var(--red)}.con-trend.down{color:var(--sale2)}.con-trend.same{color:var(--muted)}
+
+/* ── 持出管理 ── */
+.lending-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.lending-card{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.lending-card.returned{border-color:var(--sale2);background:var(--sale-light);opacity:.8}
+.lc-icon{font-size:20px;flex-shrink:0}
+.lc-info{flex:1;min-width:0}
+.lc-name{font-size:14px;font-weight:700}
+.lc-meta{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.6}
+.lc-status{font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;flex-shrink:0}
+.lc-status.out{background:#FEF3C7;color:#D97706}
+.lc-status.back{background:var(--sale-light);color:var(--sale)}
+.lc-btns{display:flex;gap:5px}
+.lc-btn{background:var(--soba-light);color:var(--soba2);border:1px solid var(--border);border-radius:5px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}
+.lc-btn.ret{background:var(--sale-light);color:var(--sale);border-color:var(--sale2)}
+.lc-btn.del{background:#FEF2F2;color:var(--red);border-color:var(--red)}
+
+/* ── 振り返り ── */
+.review-section{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.review-section h3{font-size:14px;font-weight:900;color:var(--soba);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.star-row{display:flex;gap:4px;margin-bottom:8px}
+.star{font-size:24px;cursor:pointer;transition:.1s;filter:grayscale(1);opacity:.4}
+.star.active{filter:none;opacity:1}
+.review-textarea{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;font-family:inherit;outline:none;resize:vertical;min-height:80px;line-height:1.7}
+.review-textarea:focus{border-color:var(--soba2)}
+.review-save-btn{background:var(--soba);color:#fff;border:none;border-radius:7px;padding:8px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:10px}
+.review-history-item{padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px;line-height:1.7}
+.review-history-item:last-child{border-bottom:none}
+.review-ev-label{font-size:11px;font-weight:700;color:var(--soba2);margin-bottom:3px}
+
+/* ── レポート一覧 ── */
+.report-card{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;gap:12px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.report-card.high{border-color:#EF4444;background:#FEF2F2}
+.report-card.mid{border-color:#F59E0B;background:#FFFBEB}
+.report-card.low{border-color:var(--sale2);background:var(--sale-light)}
+.report-card.resolved{opacity:.6;border-style:dashed}
+.rp-body{flex:1;min-width:0}
+.rp-name{font-size:13px;font-weight:700}
+.rp-detail{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.5}
+.rp-meta{font-size:11px;color:var(--muted);margin-top:4px}
+.rp-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px}
+.rp-badge.shortage{background:#DBEAFE;color:#1E40AF}
+.rp-badge.broken{background:#FCE7F3;color:#9D174D}
+.rp-badge.lost{background:#FEF3C7;color:#92400E}
+.rp-badge.other{background:#F3F4F6;color:#374151}
+#pdf-area{position:fixed;left:-9999px;top:0;width:820px;background:#fff;z-index:-1}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="tlogo">🍜</span>
+  <div class="ttitle">そば部 道具チェックリスト<small>啓新高等学校</small></div>
+  <div class="spacer"></div>
+  <div class="sync-pill"><div class="sdot" id="sdot"></div><span id="slabel">ローカル</span></div>
+  <button class="tbtn" onclick="showMaster()">📋 マスター編集</button>
+  <button class="tbtn" onclick="showHistory()">🗂 履歴</button>
+  <button class="tbtn" onclick="showScreen('members')">👥 部員名簿</button>
+  <button class="tbtn" onclick="showScreen('roster')">📋 役割分担</button>
+  <button class="tbtn" onclick="showScreen('consumable')">📦 消耗品</button>
+  <button class="tbtn" onclick="showScreen('lending')">🔑 持出管理</button>
+  <button class="tbtn" onclick="showScreen('review')">💬 振り返り</button>
+  <button class="tbtn" onclick="openFbModal()">⚙️</button>
+  <button class="tbtn wh" onclick="exportPDF()" id="pdf-btn">📥 PDF保存</button>
+</div>
+
+<div class="bc" id="bc" style="display:none"></div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sb-head"><h3>📅 イベント</h3></div>
+    <div class="sb-scroll" id="ev-list"></div>
+    <div class="sb-prog" id="sb-prog"></div>
+    <div class="sb-add">
+      <input class="sb-input" id="new-ev-name" placeholder="イベント名（例：今庄そば祭り）" onkeydown="if(event.key==='Enter')addEvent()">
+      <div class="sb-add-row">
+        <input class="sb-input" id="new-ev-date" type="date" style="flex:1;margin-bottom:0">
+        <button class="sb-add-btn" onclick="addEvent()">＋追加</button>
+      </div>
+    </div>
+  </aside>
+  <main id="main"></main>
+</div>
+
+<!-- edit item modal -->
+<div class="modal-bg" id="edit-modal">
+  <div class="modal">
+    <h3>✏️ 道具を編集</h3>
+    <label>道具名</label><input type="text" id="em-name">
+    <label>個数・メモ</label><input type="text" id="em-qty" placeholder="例：3個 / 担当者共有">
+    <div class="modal-btns">
+      <button class="mbtn cancel" onclick="closeModal('edit-modal')">キャンセル</button>
+      <button class="mbtn ok" onclick="saveEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- firebase modal -->
+<div class="modal-bg" id="fb-modal">
+  <div class="modal">
+    <h3>⚙️ 設定</h3>
+
+    <div style="background:var(--soba-light);border:1px solid var(--soba-mid);border-radius:8px;padding:12px 14px;margin-bottom:16px">
+      <label style="font-size:12px;font-weight:700;color:var(--soba);display:block;margin-bottom:6px">👤 あなたの名前（チェック時に表示）</label>
+      <div id="cfg-member-pick" style="margin-bottom:8px"></div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="cfg-username" placeholder="例：渡邊圭太"
+          style="flex:1;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;font-family:inherit;outline:none">
+        <button onclick="saveUserName()" style="background:var(--soba);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">変更</button>
+      </div>
+      <p style="font-size:11px;color:var(--muted);margin-top:5px">この端末に保存されます。次回から自動入力されます。</p>
+    </div>
+
+    <p style="font-size:12px;font-weight:700;color:var(--soba);margin-bottom:8px">🔥 Firebase リアルタイム同期</p>
+    <p style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:14px">
+      複数端末でリアルタイム同期するには<a href="https://console.firebase.google.com/" target="_blank" style="color:var(--soba2)">Firebaseコンソール</a>でRealtime Databaseを作成してください。
+    </p>
+    <label>Database URL</label><input type="text" id="fb-url" placeholder="https://xxxxx-default-rtdb.firebaseio.com">
+    <label>API Key</label><input type="text" id="fb-apikey" placeholder="AIzaSy...">
+    <label>Project ID</label><input type="text" id="fb-pid" placeholder="my-soba-project">
+    <div class="modal-btns">
+      <button class="mbtn cancel" onclick="closeModal('fb-modal')">閉じる</button>
+      <button class="mbtn ok" onclick="saveFbCfg()">保存してリロード</button>
+    </div>
+  </div>
+</div>
+
+<!-- report modal (不足・破損) -->
+<div class="modal-bg" id="report-modal">
+  <div class="modal" style="width:460px">
+    <h3>⚠️ 不足・破損を報告</h3>
+    <label>道具名</label><input type="text" id="rp-name" placeholder="例：ざる（ゆで上げ用）">
+    <label>種別</label>
+    <select id="rp-type" style="width:100%;border:1.5px solid var(--border);border-radius:7px;padding:8px 11px;font-size:13px;font-family:inherit;outline:none;margin-bottom:12px">
+      <option value="shortage">不足</option>
+      <option value="broken">破損・故障</option>
+      <option value="lost">紛失</option>
+      <option value="other">その他</option>
+    </select>
+    <label>詳細・状況</label>
+    <textarea id="rp-detail" rows="3" placeholder="例：2枚必要なところ1枚しかない / 取っ手が壊れている" style="width:100%;border:1.5px solid var(--border);border-radius:7px;padding:8px 11px;font-size:13px;font-family:inherit;outline:none;resize:vertical;margin-bottom:12px"></textarea>
+    <label>緊急度</label>
+    <select id="rp-priority" style="width:100%;border:1.5px solid var(--border);border-radius:7px;padding:8px 11px;font-size:13px;font-family:inherit;outline:none;margin-bottom:12px">
+      <option value="high">🔴 高（当日対応が必要）</option>
+      <option value="mid">🟡 中（次回までに対処）</option>
+      <option value="low">🟢 低（長期的に検討）</option>
+    </select>
+    <div class="modal-btns">
+      <button class="mbtn cancel" onclick="closeModal('report-modal')">キャンセル</button>
+      <button class="mbtn ok" onclick="submitReport()">報告する</button>
+    </div>
+  </div>
+</div>
+
+<!-- lending modal -->
+<div class="modal-bg" id="lending-modal">
+  <div class="modal" style="width:460px">
+    <h3 id="lend-modal-title">🔑 持ち出し登録</h3>
+    <label>道具名</label><input type="text" id="lend-name" placeholder="例：のし板">
+    <label>個数</label><input type="text" id="lend-qty" placeholder="例：3枚">
+    <label>持ち出し者</label><input type="text" id="lend-person" placeholder="例：渡邊圭太">
+    <label>持ち出し日</label><input type="date" id="lend-date">
+    <label>メモ</label><input type="text" id="lend-memo" placeholder="例：今庄まで車で運搬">
+    <div class="modal-btns">
+      <button class="mbtn cancel" onclick="closeModal('lending-modal')">キャンセル</button>
+      <button class="mbtn ok" onclick="saveLending()">登録</button>
+    </div>
+  </div>
+</div>
+
+<!-- member modal -->
+<div class="modal-bg" id="member-modal">
+  <div class="modal" style="width:460px">
+    <h3 id="mm-title">👤 部員を登録</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px">
+      <div><label>氏名</label><input type="text" id="mm-name" placeholder="例：山田 太郎"></div>
+      <div><label>よみがな</label><input type="text" id="mm-kana" placeholder="やまだ たろう"></div>
+      <div><label>学年</label>
+        <select id="mm-grade" style="width:100%;border:1.5px solid var(--border);border-radius:7px;padding:8px 11px;font-size:13px;font-family:inherit;outline:none;margin-bottom:12px">
+          <option value="1年">1年</option>
+          <option value="2年">2年</option>
+          <option value="3年">3年</option>
+          <option value="顧問">顧問</option>
+          <option value="OB/OG">OB/OG</option>
+        </select>
+      </div>
+      <div><label>役職</label>
+        <select id="mm-role" style="width:100%;border:1.5px solid var(--border);border-radius:7px;padding:8px 11px;font-size:13px;font-family:inherit;outline:none;margin-bottom:12px">
+          <option value="">（なし）</option>
+          <option value="部長">部長</option>
+          <option value="副部長">副部長</option>
+          <option value="会計">会計</option>
+          <option value="記録">記録</option>
+          <option value="顧問">顧問</option>
+          <option value="部員">部員</option>
+        </select>
+      </div>
+      <div><label>連絡先（任意）</label><input type="text" id="mm-contact" placeholder="090-xxxx-xxxx"></div>
+      <div><label>メールアドレス（任意）</label><input type="text" id="mm-email" placeholder="xxx@keishin.jp"></div>
+    </div>
+    <label>特技・備考</label>
+    <input type="text" id="mm-note" placeholder="例：そば打ち経験3年 / 車あり">
+    <div class="modal-btns">
+      <button class="mbtn cancel" onclick="closeModal('member-modal')">キャンセル</button>
+      <button class="mbtn ok" onclick="saveMember()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="pdf-area"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// MASTER DEFAULT DATA
+// ═══════════════════════════════════════════════
+const MASTER_DEFAULT = {
+  sale:{
+    全体:[
+      {name:'看板・のぼり',qty:'2枚'},
+      {name:'テーブルクロス',qty:'必要枚数'},
+      {name:'ゴミ袋',qty:'10枚以上'},
+      {name:'養生テープ',qty:'1巻'},
+      {name:'マジック・ペン',qty:'3本'},
+      {name:'軍手',qty:'人数分'},
+      {name:'エプロン',qty:'人数分'},
+      {name:'タオル',qty:'10枚'},
+      {name:'救急セット',qty:'1式'},
+      {name:'カメラ・撮影機材',qty:'1式'},
+    ],
+    ゆで:[
+      {name:'大鍋（ゆで用）',qty:'2個'},
+      {name:'カセットコンロ',qty:'2台'},
+      {name:'ガスボンベ',qty:'予備含め6本'},
+      {name:'ざる（ゆで上げ用）',qty:'4枚'},
+      {name:'トング・菜箸',qty:'各2本'},
+      {name:'水切りかご',qty:'2個'},
+      {name:'バケツ（水用）',qty:'2個'},
+      {name:'温度計',qty:'1本'},
+      {name:'鍋つかみ',qty:'2組'},
+    ],
+    受付:[
+      {name:'金銭トレー',qty:'2枚'},
+      {name:'お釣り用小銭',qty:'十分な量'},
+      {name:'料金表・メニュー板',qty:'1枚'},
+      {name:'番号札',qty:'50枚以上'},
+      {name:'ビニール袋（会計用）',qty:'50枚'},
+      {name:'筆記用具',qty:'2セット'},
+      {name:'領収書',qty:'1冊'},
+    ],
+    洗い:[
+      {name:'洗い桶',qty:'4個'},
+      {name:'食器用洗剤',qty:'2本'},
+      {name:'スポンジ',qty:'4個'},
+      {name:'給水タンク or ホース',qty:'1式'},
+      {name:'乾燥用ラック',qty:'2個'},
+      {name:'ペーパータオル',qty:'2ロール'},
+    ],
+    盛り付け:[
+      {name:'そば器（ざる・お盆）',qty:'販売数分'},
+      {name:'薬味容器（ネギ・わさび）',qty:'各2個'},
+      {name:'つゆ容器',qty:'販売数＋予備'},
+      {name:'菜箸',qty:'4本'},
+      {name:'盛り付け用トング',qty:'2本'},
+      {name:'つゆ計量カップ',qty:'1個'},
+    ],
+    整列:[
+      {name:'案内看板（行列誘導）',qty:'2枚'},
+      {name:'ロープ・コーン',qty:'1式'},
+      {name:'椅子（待ち用）',qty:'数脚'},
+      {name:'ハンドマイク',qty:'1個'},
+    ],
+  },
+  inst:{
+    指導:[
+      {name:'のし板',qty:'人数分'},
+      {name:'のし棒',qty:'人数分'},
+      {name:'こね鉢',qty:'人数分'},
+      {name:'包丁',qty:'人数分'},
+      {name:'まな板（切り台）',qty:'人数分'},
+      {name:'こま板',qty:'人数分'},
+      {name:'スケッパー',qty:'人数分'},
+      {name:'そば粉',qty:'計画量'},
+      {name:'つなぎ粉（小麦粉）',qty:'計画量'},
+      {name:'水（計量済み）',qty:'計画量'},
+      {name:'計量カップ・スケール',qty:'各1'},
+      {name:'打ち粉（片栗粉）',qty:'適量'},
+      {name:'エプロン',qty:'参加者分'},
+      {name:'三角巾・帽子',qty:'参加者分'},
+      {name:'手順説明資料',qty:'参加者分'},
+    ],
+    持ち帰り:[
+      {name:'持ち帰り袋',qty:'参加者分'},
+      {name:'輪ゴム',qty:'多めに'},
+      {name:'打ち粉（持ち帰り用）',qty:'小袋で'},
+      {name:'調理説明カード',qty:'参加者分'},
+      {name:'クーラーボックス',qty:'1個'},
+    ],
+  },
+  other:{
+    その他:[
+      {name:'（ここに道具を追加してください）',qty:''},
+    ],
+  },
+};
+
+const TYPE_META = {
+  sale: {label:'そば販売',    icon:'🍜', color:'sale', roles:['全体','ゆで','受付','洗い','盛り付け','整列']},
+  inst: {label:'そば打ち指導', icon:'🌾', color:'inst', roles:['指導','持ち帰り']},
+  other:{label:'その他',      icon:'📦', color:'other', roles:['その他']},
+};
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let S = {events:{}, items:{}, checks:{}, approvals:{}, roster:{}, consumables:{}, lending:[], reports:[], reviews:{}, members:{}};
+let currentEvent = null;
+let currentType  = null;
+let currentRole  = null;
+let masterItems  = null;
+let editTarget   = null;
+let masterType   = 'sale';
+let curScreen    = 'type';
+let userName     = localStorage.getItem('soba-user') || '';
+
+// ═══════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════
+document.addEventListener('firebase-ready', ()=>{
+  if(!userName) askName();  // 未設定の初回のみ
+  loadLocal();
+  if(window._firebaseReady) setupFb();
+  updateSync();
+  renderAll();
+});
+
+function loadLocal(){
+  try {
+    const s = localStorage.getItem('soba-st3');
+    if(s){
+      const parsed = JSON.parse(s);
+      // 配列フィールドは直接代入、オブジェクトフィールドはマージ
+      S.events     = parsed.events     || {};
+      S.items      = parsed.items      || {};
+      S.checks     = parsed.checks     || {};
+      S.approvals  = parsed.approvals  || {};
+      S.roster     = parsed.roster     || {};
+      S.consumables= parsed.consumables|| {};
+      S.lending    = Array.isArray(parsed.lending)  ? parsed.lending  : [];
+      S.reports    = Array.isArray(parsed.reports)  ? parsed.reports  : [];
+      S.reviews    = parsed.reviews    || {};
+      S.members    = parsed.members    || {};
+    }
+    const m = localStorage.getItem('soba-master3');
+    if(m){
+      const saved = JSON.parse(m);
+      // 保存済みデータに MASTER_DEFAULT の不足役割を補完する
+      masterItems = deepClone(MASTER_DEFAULT);
+      for(const type of ['sale','inst','other']){
+        if(saved[type]){
+          for(const role of Object.keys(saved[type])){
+            masterItems[type][role] = saved[type][role]; // 保存済みを優先
+          }
+        }
+      }
+    } else {
+      masterItems = deepClone(MASTER_DEFAULT);
+    }
+  } catch(e) { masterItems = deepClone(MASTER_DEFAULT); }
+  for(const type of ['sale','inst','other']){
+    if(masterItems[type]) TYPE_META[type].roles = Object.keys(masterItems[type]);
+  }
+  if(!Object.keys(S.events).length){
+    const id = uid();
+    S.events[id] = {name:'今庄そば祭り', date:todayStr(), memo:'', createdAt:Date.now()};
+    S.items[id]  = buildFromMaster();
+    S.checks[id] = {};
+    currentEvent = id;
+    saveLocal();
+  } else {
+    currentEvent = Object.keys(S.events).sort((a,b)=>S.events[b].createdAt-S.events[a].createdAt)[0];
+  }
+}
+function saveLocal(){
+  try {
+    localStorage.setItem('soba-st3', JSON.stringify(S));
+    localStorage.setItem('soba-master3', JSON.stringify(masterItems));
+  } catch(e){}
+}
+function buildFromMaster(){
+  const out={};
+  for(const type of ['sale','inst','other']){
+    out[type]={};
+    for(const [role,arr] of Object.entries(masterItems[type]||{})){
+      out[type][role]={};
+      arr.forEach((it,i)=>{
+        const id=`${type}_${role.replace(/\s/g,'')}_${i}_${Date.now()+i}`;
+        out[type][role][id]={id,name:it.name,qty:it.qty};
+      });
+    }
+  }
+  return out;
+}
+
+// ═══════════════════════════════════════════════
+// FIREBASE
+// ═══════════════════════════════════════════════
+function setupFb(){
+  const db=window._db,r=window._fbRef,ov=window._fbOnValue;
+  ov(r(db,'soba3'), snap=>{
+    const d=snap.val();
+    if(d){
+      if(d.events)S.events=d.events; if(d.items)S.items=d.items;
+      if(d.checks)S.checks=d.checks; if(d.approvals)S.approvals=d.approvals;
+      if(d.roster)S.roster=d.roster; if(d.consumables)S.consumables=d.consumables;
+      if(d.lending)S.lending=d.lending; if(d.reports)S.reports=d.reports;
+      if(d.reviews)S.reviews=d.reviews; if(d.members)S.members=d.members; if(d.members)S.members=d.members;
+    }
+    saveLocal(); renderAll(); updateSync(true);
+  });
+}
+function persist(){
+  saveLocal();
+  if(window._firebaseReady&&window._db){
+    window._fbSet(window._fbRef(window._db,'soba3/events'),S.events).catch(()=>{});
+    window._fbSet(window._fbRef(window._db,'soba3/items'),S.items).catch(()=>{});
+    window._fbSet(window._fbRef(window._db,'soba3/checks'),S.checks).catch(()=>{});
+    window._fbSet(window._fbRef(window._db,'soba3/approvals'),S.approvals).catch(()=>{});
+    window._fbSet(window._fbRef(window._db,'soba3/roster'),S.roster).catch(()=>{});
+    window._fbSet(window._fbRef(window._db,'soba3/consumables'),S.consumables).catch(()=>{});
+    window._fbSet(window._fbRef(window._db,'soba3/lending'),S.lending).catch(()=>{});
+    window._fbSet(window._fbRef(window._db,'soba3/reports'),S.reports).catch(()=>{});
+    window._fbSet(window._fbRef(window._db,'soba3/reviews'),S.reviews).catch(()=>{});
+    window._fbSet(window._fbRef(window._db,'soba3/members'),S.members).catch(()=>{});
+    window._fbSet(window._fbRef(window._db,'soba3/members'),S.members).catch(()=>{});
+  }
+  renderAll();
+}
+function updateSync(on){
+  const d=document.getElementById('sdot'),l=document.getElementById('slabel');
+  if(on){d.className='sdot on';l.textContent='同期中';}
+  else if(window._firebaseReady){d.className='sdot';l.textContent='接続中';}
+  else{d.className='sdot';l.textContent='ローカル';}
+}
+
+// ═══════════════════════════════════════════════
+// EVENTS
+// ═══════════════════════════════════════════════
+function addEvent(){
+  const nameEl=document.getElementById('new-ev-name');
+  const name=nameEl.value.trim();
+  if(!name){toast('イベント名を入力してください');return;}
+  const date=document.getElementById('new-ev-date').value||todayStr();
+  const id=uid();
+  S.events[id]={name,date,memo:'',createdAt:Date.now()};
+  S.items[id]=buildFromMaster();
+  S.checks[id]={};
+  currentEvent=id; currentType=null; currentRole=null; curScreen='type';
+  nameEl.value='';
+  persist(); toast(`✅ 「${name}」を作成しました`);
+}
+function selectEvent(id){
+  currentEvent=id; currentType=null; currentRole=null; curScreen='type';
+  renderAll();
+}
+function deleteEvent(id){
+  if(!confirm(`「${S.events[id]?.name}」を削除しますか？`))return;
+  delete S.events[id]; delete S.items[id]; delete S.checks[id]; delete S.approvals[id];
+  delete S.roster[id];
+  if(currentEvent===id){
+    currentEvent=Object.keys(S.events)[0]||null;
+    currentType=null; currentRole=null; curScreen='type';
+  }
+  persist(); toast('削除しました');
+}
+function copyEvent(srcId){
+  const src=S.events[srcId];
+  if(!src)return;
+  const name=prompt('コピー先のイベント名を入力してください',src.name+' (コピー)');
+  if(!name?.trim())return;
+  const date=prompt('開催日（YYYY-MM-DD）',todayStr());
+  const id=uid();
+  S.events[id]={name:name.trim(),date:date||todayStr(),memo:'コピー元：'+src.name,createdAt:Date.now()};
+  // アイテムをディープコピー（チェックはリセット）
+  S.items[id]=deepClone(S.items[srcId]||buildFromMaster());
+  S.checks[id]={};
+  S.approvals[id]={};
+  S.roster[id]=deepClone(S.roster[srcId]||{});
+  currentEvent=id; currentType=null; currentRole=null; curScreen='type';
+  persist(); toast(`✅ 「${name.trim()}」としてコピーしました`);
+}
+
+// ── showScreen: 汎用画面切り替え ──
+function showScreen(s){ curScreen=s; renderAll(); }
+
+// ═══════════════════════════════════════════════
+// ITEMS (per-event)
+// ═══════════════════════════════════════════════
+function addItem(type,role){
+  const ni=document.getElementById(`ni-${type}-${role}`);
+  const qi=document.getElementById(`qi-${type}-${role}`);
+  const name=ni?.value.trim();
+  if(!name){toast('道具名を入力してください');return;}
+  const id=uid();
+  if(!S.items[currentEvent]) S.items[currentEvent]={};
+  if(!S.items[currentEvent][type]) S.items[currentEvent][type]={};
+  if(!S.items[currentEvent][type][role]) S.items[currentEvent][type][role]={};
+  S.items[currentEvent][type][role][id]={id,name,qty:qi?.value.trim()||''};
+  ni.value=''; if(qi)qi.value='';
+  persist();
+}
+function deleteItem(type,role,id){
+  if(!confirm('この道具を削除しますか？'))return;
+  delete S.items[currentEvent]?.[type]?.[role]?.[id];
+  delete S.checks[currentEvent]?.[id];
+  persist();
+}
+function openEdit(type,role,id){
+  const it=S.items[currentEvent]?.[type]?.[role]?.[id];
+  if(!it)return;
+  editTarget={type,role,id};
+  document.getElementById('em-name').value=it.name;
+  document.getElementById('em-qty').value=it.qty||'';
+  openModal('edit-modal');
+}
+function saveEdit(){
+  if(!editTarget)return;
+  const {type,role,id}=editTarget;
+  const it=S.items[currentEvent]?.[type]?.[role]?.[id];
+  if(!it)return;
+  it.name=document.getElementById('em-name').value.trim();
+  it.qty =document.getElementById('em-qty').value.trim();
+  closeModal('edit-modal'); persist(); toast('保存しました');
+}
+function toggleCheck(id){
+  if(!S.checks[currentEvent]) S.checks[currentEvent]={};
+  const c=S.checks[currentEvent][id];
+  S.checks[currentEvent][id] = c?.checked
+    ? {checked:false}
+    : {checked:true, by:userName, at:nowStr()};
+  persist();
+}
+function resetRole(type,role){
+  if(!confirm(`「${role}」のチェックをリセットしますか？`))return;
+  Object.keys(S.items[currentEvent]?.[type]?.[role]||{}).forEach(id=>{
+    delete S.checks[currentEvent]?.[id];
+  });
+  persist(); toast('リセットしました');
+}
+
+// ═══════════════════════════════════════════════
+// APPROVALS
+// ═══════════════════════════════════════════════
+// 承認ステップ定義（順序が重要）
+const APV_STEPS = [
+  {key:'role',     label:'担当確認',  icon:'👤', cls:'role-step',     btnCls:'role-btn'},
+  {key:'captain',  label:'部長確認',  icon:'⭐', cls:'captain-step',  btnCls:'captain-btn'},
+  {key:'advisor',  label:'顧問承認',  icon:'🎓', cls:'advisor-step',  btnCls:'advisor-btn'},
+];
+
+function getApv(type,role){
+  return S.approvals?.[currentEvent]?.[type]?.[role] || {};
+}
+function setApv(type,role,key,data){
+  if(!S.approvals) S.approvals={};
+  if(!S.approvals[currentEvent]) S.approvals[currentEvent]={};
+  if(!S.approvals[currentEvent][type]) S.approvals[currentEvent][type]={};
+  if(!S.approvals[currentEvent][type][role]) S.approvals[currentEvent][type][role]={};
+  S.approvals[currentEvent][type][role][key]=data;
+  persist();
+}
+function revokeApv(type,role,key){
+  // キャンセル時：そのステップ以降をすべてリセット
+  const order=APV_STEPS.map(s=>s.key);
+  const idx=order.indexOf(key);
+  if(!S.approvals?.[currentEvent]?.[type]?.[role])return;
+  for(let i=idx;i<order.length;i++) delete S.approvals[currentEvent][type][role][order[i]];
+  persist();
+}
+
+function approve(type,role,key){
+  const apv=getApv(type,role);
+  const order=APV_STEPS.map(s=>s.key);
+  const idx=order.indexOf(key);
+  // 前のステップが完了しているか確認
+  if(idx>0&&!apv[order[idx-1]]?.done){
+    toast('前のステップを先に完了してください'); return;
+  }
+  // 全アイテムチェック確認（担当確認のみ）
+  if(key==='role'){
+    const roleItems=Object.values(S.items[currentEvent]?.[type]?.[role]||{});
+    const checks=S.checks[currentEvent]||{};
+    const allDone=roleItems.every(it=>checks[it.id]?.checked);
+    if(!allDone&&roleItems.length>0){
+      if(!confirm('未チェックの道具があります。それでも確認しますか？'))return;
+    }
+  }
+  setApv(type,role,key,{done:true, by:userName, at:nowStr()});
+  toast(`✅ ${APV_STEPS.find(s=>s.key===key).label}しました`);
+}
+
+// ═══════════════════════════════════════════════
+// MASTER
+// ═══════════════════════════════════════════════
+function showMaster(){ curScreen='master'; masterType='sale'; renderAll(); }
+function addMasterItem(type,role){
+  const ni=document.getElementById(`mni-${type}-${role}`);
+  const qi=document.getElementById(`mqi-${type}-${role}`);
+  const name=ni?.value.trim();
+  if(!name){toast('道具名を入力してください');return;}
+  if(!masterItems[type]) masterItems[type]={};
+  if(!masterItems[type][role]) masterItems[type][role]=[];
+  masterItems[type][role].push({name,qty:qi?.value.trim()||''});
+  if(ni)ni.value=''; if(qi)qi.value='';
+  saveLocal(); renderMasterScreen(); toast('追加しました');
+}
+function deleteMasterItem(type,role,idx){
+  if(!confirm('マスターから削除しますか？（既存イベントには影響しません）'))return;
+  masterItems[type][role].splice(idx,1);
+  saveLocal(); renderMasterScreen();
+}
+function editMasterItem(type,role,idx){
+  const it=masterItems[type]?.[role]?.[idx];
+  if(!it)return;
+  const name=prompt('道具名',it.name);
+  if(name===null)return;
+  const qty=prompt('個数・メモ',it.qty||'');
+  if(qty===null)return;
+  masterItems[type][role][idx]={name:name.trim(),qty:qty.trim()};
+  saveLocal(); renderMasterScreen(); toast('更新しました');
+}
+function addMasterRole(type){
+  const name=prompt('新しい役割名を入力してください');
+  if(!name?.trim())return;
+  if(masterItems[type]?.[name.trim()]){toast('すでに存在します');return;}
+  if(!masterItems[type]) masterItems[type]={};
+  masterItems[type][name.trim()]=[];
+  TYPE_META[type].roles=Object.keys(masterItems[type]);
+  masterRole=name.trim(); // 新しく追加した役割を選択状態に
+  saveLocal(); renderMasterScreen(); toast(`「${name.trim()}」を追加しました`);
+}
+function deleteMasterRole(type,role){
+  if(!confirm(`役割「${role}」をマスターから削除しますか？`))return;
+  delete masterItems[type][role];
+  TYPE_META[type].roles=Object.keys(masterItems[type]);
+  masterRole=null; // 削除後は先頭役割に戻す
+  saveLocal(); renderMasterScreen();
+}
+function resetMasterToDefault(){
+  if(!confirm('マスターを初期値に戻しますか？'))return;
+  masterItems=deepClone(MASTER_DEFAULT);
+  for(const type of ['sale','inst','other'])
+    TYPE_META[type].roles=Object.keys(masterItems[type]);
+  masterRole=null;
+  saveLocal(); renderMasterScreen(); toast('初期値に戻しました');
+}
+
+// ═══════════════════════════════════════════════
+// RENDER ALL
+// ═══════════════════════════════════════════════
+function renderAll(){
+  if(!currentEvent&&Object.keys(S.events).length)
+    currentEvent=Object.keys(S.events).sort((a,b)=>S.events[b].createdAt-S.events[a].createdAt)[0];
+  renderEvList(); renderSbProg(); renderBc();
+  if(curScreen==='master')           renderMasterScreen();
+  else if(curScreen==='history')     renderHistScreen();
+  else if(curScreen==='members')     renderMembersScreen();
+  else if(curScreen==='roster')      renderRosterScreen();
+  else if(curScreen==='consumable')  renderConsumableScreen();
+  else if(curScreen==='lending')     renderLendingScreen();
+  else if(curScreen==='review')      renderReviewScreen();
+  else if(curScreen==='reports')     renderReportScreen();
+  else if(curScreen==='check'&&currentType&&currentRole) renderCheckScreen();
+  else renderTypeScreen();
+  updateFAB();
+}
+
+function renderEvList(){
+  const el=document.getElementById('ev-list');
+  const evts=Object.entries(S.events).sort((a,b)=>b[1].createdAt-a[1].createdAt);
+  if(!evts.length){el.innerHTML='<p style="font-size:12px;color:var(--muted);padding:6px 4px">イベントなし</p>';return;}
+  el.innerHTML=evts.map(([id,ev])=>`
+    <div class="ev-item${id===currentEvent?' active':''}" onclick="selectEvent('${id}')">
+      <span class="ev-dot"></span>
+      <span class="ev-name">${esc(ev.name)}</span>
+      <span class="ev-date">${ev.date||''}</span>
+      <button class="ev-del" onclick="event.stopPropagation();copyEvent('${id}')" title="コピー" style="color:#CBD5E1;font-size:11px">📋</button>
+      <button class="ev-del" onclick="event.stopPropagation();deleteEvent('${id}')" title="削除">×</button>
+    </div>`).join('');
+}
+function renderSbProg(){
+  if(!currentEvent){document.getElementById('sb-prog').innerHTML='';return;}
+  const items=S.items[currentEvent]||{};
+  const checks=S.checks[currentEvent]||{};
+  let html='';
+  for(const [type,tm] of Object.entries(TYPE_META)){
+    let total=0,done=0;
+    for(const r of Object.keys(items[type]||{}))
+      for(const id of Object.keys(items[type][r]||{})){
+        total++; if(checks[id]?.checked)done++;
+      }
+    if(!total)continue;
+    const pct=Math.round(done/total*100);
+    html+=`<div class="prog-row"><span>${tm.icon} ${tm.label}</span><span>${done}/${total}</span></div>
+    <div class="prog-track"><div class="prog-fill ${tm.color}" style="width:${pct}%"></div></div>`;
+  }
+  document.getElementById('sb-prog').innerHTML=html||'';
+}
+function renderBc(){
+  const bc=document.getElementById('bc');
+  const screenLabels={members:'👥 部員名簿',roster:'👥 役割分担表',consumable:'📦 消耗品記録',lending:'🔑 持出管理',review:'💬 振り返り',reports:'⚠️ 報告台帳'};
+  if(curScreen in screenLabels){
+    bc.style.display='flex';
+    bc.innerHTML=`<span class="bc-link" onclick="backToType()">🏠 イベント選択</span><span class="bc-sep">›</span><span class="bc-cur">${screenLabels[curScreen]}</span>`;
+  } else if(curScreen==='master'){
+    bc.style.display='flex';
+    bc.innerHTML=`<span class="bc-link" onclick="backToType()">🏠 イベント選択</span><span class="bc-sep">›</span><span class="bc-cur">📋 マスター道具リスト</span>`;
+  } else if(curScreen==='history'){
+    bc.style.display='flex';
+    bc.innerHTML=`<span class="bc-link" onclick="backToType()">🏠 イベント選択</span><span class="bc-sep">›</span><span class="bc-cur">🗂 PDF保存履歴</span>`;
+  } else if(curScreen==='check'&&currentEvent&&currentType){
+    const evName=S.events[currentEvent]?.name||'';
+    const tm=TYPE_META[currentType];
+    bc.style.display='flex';
+    bc.innerHTML=`<span class="bc-link" onclick="backToType()">${esc(evName)}</span><span class="bc-sep">›</span><span class="bc-cur">${tm.icon} ${tm.label}</span>`;
+  } else {
+    bc.style.display='none';
+  }
+}
+
+// ── Screen: type select ──
+function renderTypeScreen(){
+  if(!currentEvent){
+    document.getElementById('main').innerHTML=`
+    <div class="welcome">
+      <div class="big">🍜</div>
+      <h2>そば部 道具チェックリスト</h2>
+      <p>左のパネルからイベントを選択するか<br>新しいイベントを追加してください。</p>
+    </div>`;
+    return;
+  }
+  const ev=S.events[currentEvent];
+  const items=S.items[currentEvent]||{};
+  const checks=S.checks[currentEvent]||{};
+  const cards=Object.entries(TYPE_META).map(([type,tm])=>{
+    let total=0,done=0;
+    for(const r of Object.keys(items[type]||{}))
+      for(const id of Object.keys(items[type][r]||{})){
+        total++; if(checks[id]?.checked)done++;
+      }
+    const pct=total?Math.round(done/total*100):0;
+    const emoji=pct===100?'🎉':pct>0?'⏳':'📋';
+    const pills=tm.roles.map(r=>`<span class="tc-pill">${r}</span>`).join('');
+    return `<div class="type-card ${tm.color}" onclick="selectType('${type}')">
+      <div class="tc-icon">${tm.icon}</div>
+      <div class="tc-name">${tm.label}</div>
+      <div class="tc-desc">${emoji} ${done}/${total} チェック済み</div>
+      <div class="tc-roles">${pills}</div>
+      <div class="tc-prog-wrap">
+        <div class="tc-prog-label">${pct}%</div>
+        <div class="tc-prog-bar"><div class="tc-prog-fill" style="width:${pct}%;background:var(--${tm.color}2)"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('main').innerHTML=`
+  <div class="type-screen">
+    <h2>📅 ${esc(ev.name)}</h2>
+    <p>${ev.date||''}${ev.memo?' ／ '+esc(ev.memo):''}</p>
+    <div class="type-cards">${cards}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:20px">
+      <button onclick="showScreen('roster')" class="tbtn" style="background:var(--sale-mid);color:var(--sale)">👥 役割分担表</button>
+      <button onclick="showScreen('consumable')" class="tbtn" style="background:var(--inst-mid);color:var(--inst2)">📦 消耗品記録</button>
+      <button onclick="showScreen('review')" class="tbtn" style="background:var(--other-mid);color:var(--other2)">💬 振り返り</button>
+      <button onclick="showScreen('reports')" class="tbtn" style="background:#FEF2F2;color:var(--red)">⚠️ 報告台帳${(S.reports||[]).filter(r=>!r.resolved).length?` <span style="background:var(--red);color:#fff;border-radius:8px;padding:1px 7px;font-size:10px">${(S.reports||[]).filter(r=>!r.resolved).length}</span>`:''}</button>
+      <button onclick="copyEvent('${currentEvent}')" class="tbtn" style="background:var(--soba-mid);color:var(--soba)">📋 このイベントをコピー</button>
+    </div>
+  </div>`;
+}
+function selectType(type){
+  currentType=type; currentRole=TYPE_META[type].roles[0]; curScreen='check'; renderAll();
+}
+function backToType(){ currentType=null; currentRole=null; curScreen='type'; renderAll(); }
+
+// ── Screen: checklist ──
+function renderCheckScreen(){
+  const type=currentType,role=currentRole,tm=TYPE_META[type];
+  const items=S.items[currentEvent]?.[type]||{};
+  const checks=S.checks[currentEvent]||{};
+
+  // ロールタブ
+  const roleTabs=tm.roles.map(r=>{
+    const ids=Object.keys(items[r]||{});
+    const done=ids.filter(id=>checks[id]?.checked).length;
+    const apv=S.approvals?.[currentEvent]?.[type]?.[r]||{};
+    const apvBadge=apv.advisor?.done?'🎓':apv.captain?.done?'⭐':apv.role?.done?'👤':'';
+    return `<div class="rtab${r===role?' active '+tm.color:''}" onclick="setRole('${r}')">
+      ${apvBadge} ${r}<span class="rbadge">${done}/${ids.length}</span>
+    </div>`;
+  }).join('');
+
+  // アイテムカード
+  const roleItems=Object.values(items[role]||{});
+  const total=roleItems.length, done=roleItems.filter(it=>checks[it.id]?.checked).length;
+  const allChecked=(total>0&&done===total);
+  const cards=roleItems.map(it=>{
+    const c=checks[it.id];
+    return `<div class="item-card${c?.checked?' checked '+tm.color:''}" onclick="toggleCheck('${it.id}')">
+      <div class="item-chk">${c?.checked?'✓':''}</div>
+      <div class="item-body">
+        <div class="item-name">${esc(it.name)}</div>
+        ${it.qty?`<div class="item-qty">📦 ${esc(it.qty)}</div>`:''}
+        ${c?.checked&&c.by?`<div class="item-by">✓ ${esc(c.by)}　${c.at||''}</div>`:''}
+      </div>
+      <div class="item-acts">
+        <button class="ia" onclick="event.stopPropagation();openEdit('${type}','${role}','${it.id}')" title="編集">✏️</button>
+        <button class="ia" onclick="event.stopPropagation();deleteItem('${type}','${role}','${it.id}')" title="削除">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  // 承認フロー
+  const apv=getApv(type,role);
+  const apvSteps=APV_STEPS.map((s,i)=>{
+    const prev=i>0?APV_STEPS[i-1]:null;
+    const prevDone=i===0||apv[prev.key]?.done;
+    const thisDone=!!apv[s.key]?.done;
+    const canAct=prevDone&&!thisDone;
+    return `<div class="apv-step ${s.cls}${thisDone?' done':''}">
+      <div class="apv-step-icon">${thisDone?'✅':s.icon}</div>
+      <div class="apv-step-label">${s.label}</div>
+      <div class="apv-step-info">${thisDone?(esc(apv[s.key].by)+'<br>'+esc(apv[s.key].at)):'—'}</div>
+      ${thisDone
+        ? `<button class="apv-btn revoke" onclick="revokeApv('${type}','${role}','${s.key}')">取消</button>`
+        : `<button class="apv-btn ${s.btnCls}" onclick="approve('${type}','${role}','${s.key}')" ${canAct?'':'disabled'}>${canAct?s.label+'する':'待機中'}</button>`
+      }
+    </div>`;
+  });
+  const apvHTML=apvSteps.join('<div class="apv-arrow">›</div>');
+  const advisorDone=!!apv.advisor?.done;
+
+  document.getElementById('main').innerHTML=`
+  <div class="check-screen">
+    <div class="role-tabs">${roleTabs}</div>
+    <div class="sec-bar ${tm.color}">
+      <h3>${tm.icon} ${tm.label}　›　${role}</h3>
+      <span class="sec-count">${done} / ${total}</span>
+      <button class="reset-btn" onclick="resetRole('${type}','${role}')">リセット</button>
+    </div>
+    <div class="items-grid">${cards||`<div style="color:var(--muted);font-size:13px;padding:12px 0">道具がありません。下から追加してください。</div>`}</div>
+    <div class="add-row">
+      <input class="ni" id="ni-${type}-${role}" placeholder="道具名を追加" onkeydown="if(event.key==='Enter')addItem('${type}','${role}')">
+      <input class="qi" id="qi-${type}-${role}" placeholder="個数・メモ（任意）">
+      <button class="add-btn" onclick="addItem('${type}','${role}')">＋ 追加</button>
+    </div>
+    <!-- 承認フロー -->
+    <div class="apv-section">
+      <div class="apv-title">
+        🔏 確認・承認フロー　<span style="font-size:11px;color:var(--muted);font-weight:400">（${role}）</span>
+        ${advisorDone?'<span style="margin-left:auto;background:#D97706;color:#fff;padding:2px 10px;border-radius:10px;font-size:11px">✅ 顧問承認済み</span>':''}
+      </div>
+      <div class="apv-flow">${apvHTML}</div>
+      ${!allChecked&&!apv.role?.done?`<div class="apv-lock-msg">⚠️ 未チェックの道具が ${total-done} 件あります。すべてチェックしてから担当確認してください。</div>`:''}
+    </div>
+  </div>`;
+}
+function setRole(r){ currentRole=r; renderCheckScreen(); }
+
+// ── Screen: master ──
+let masterRole = null; // 現在選択中の役割
+
+function renderMasterScreen(){
+  const type=masterType, tm=TYPE_META[type];
+  const roles=Object.keys(masterItems[type]||{});
+  // masterRole が未設定 or 存在しない役割なら最初の役割を選択
+  if(!masterRole||!roles.includes(masterRole)) masterRole=roles[0]||null;
+
+  // 種別タブ（そば販売 / そば打ち指導 / その他）
+  const typeTabs=Object.entries(TYPE_META).map(([t,m])=>
+    `<div class="mtype-tab${t===type?' active '+m.color:''}" onclick="masterType='${t}';masterRole=null;renderMasterScreen()">${m.icon} ${m.label}</div>`
+  ).join('');
+
+  // 役割タブ（全体 / ゆで / 受付 … ）
+  const roleTabs=roles.map(r=>`
+    <div class="rtab${r===masterRole?' active '+tm.color:''}" onclick="masterRole='${r}';renderMasterScreen()">
+      ${r}<span class="rbadge">${(masterItems[type][r]||[]).length}</span>
+    </div>`).join('');
+
+  // 現在の役割の道具リスト
+  let roleBody='<p style="color:var(--muted);font-size:13px;padding:8px 0">役割がありません。</p>';
+  if(masterRole){
+    const arr=masterItems[type][masterRole]||[];
+    const rows=arr.map((it,i)=>`
+      <div class="mrow">
+        <span class="mrow-name">${esc(it.name)}</span>
+        <span class="mrow-qty">${esc(it.qty||'')}</span>
+        <button class="ia" onclick="editMasterItem('${type}','${masterRole}',${i})" title="編集">✏️</button>
+        <button class="ia" onclick="deleteMasterItem('${type}','${masterRole}',${i})" title="削除">🗑</button>
+      </div>`).join('');
+    roleBody=`
+    <div class="mrole-block">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <div class="mrole-title ${type}" style="font-size:15px">${masterRole}</div>
+        <span style="font-size:12px;color:var(--muted)">${arr.length}件</span>
+        <div style="flex:1"></div>
+        <button onclick="deleteMasterRole('${type}','${masterRole}')" style="background:#FEF2F2;color:var(--red);border:none;border-radius:5px;padding:3px 9px;font-size:11px;cursor:pointer;font-family:inherit;font-weight:700">この役割を削除</button>
+      </div>
+      ${rows||'<p style="font-size:12px;color:var(--muted);padding:4px 0">（道具なし）</p>'}
+      <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap">
+        <input id="mni-${type}-${masterRole}" placeholder="道具名を追加" onkeydown="if(event.key==='Enter')addMasterItem('${type}','${masterRole}')"
+          style="flex:1;min-width:140px;border:1.5px solid var(--border);border-radius:6px;padding:7px 9px;font-size:13px;font-family:inherit;outline:none">
+        <input id="mqi-${type}-${masterRole}" placeholder="個数メモ（任意）"
+          style="width:140px;border:1.5px solid var(--border);border-radius:6px;padding:7px 9px;font-size:13px;font-family:inherit;outline:none">
+        <button onclick="addMasterItem('${type}','${masterRole}')"
+          style="background:var(--soba);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">＋追加</button>
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('main').innerHTML=`
+  <div class="master-screen">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+      <h2 style="font-size:18px;font-weight:900;color:var(--soba)">📋 マスター道具リスト</h2>
+      <div style="flex:1"></div>
+      <button onclick="resetMasterToDefault()" style="background:#FEF2F2;color:var(--red);border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">初期値に戻す</button>
+    </div>
+    <div style="background:#FDF6ED;border:1px solid var(--soba-mid);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:14px">
+      💡 ここで設定した道具が<strong style="color:var(--soba)">新規イベント作成時のデフォルト</strong>になります。既存のイベントには影響しません。
+    </div>
+    <div class="mtype-tabs">${typeTabs}</div>
+    <div class="role-tabs" style="margin-bottom:14px">${roleTabs}</div>
+    ${roleBody}
+    <button onclick="addMasterRole('${type}')" style="background:var(--soba-light);color:var(--soba);border:1.5px dashed var(--soba2);border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;margin-top:8px">
+      ＋ 役割を追加
+    </button>
+  </div>`;
+}
+
+// ── Screen: history ──
+function showHistory(){ curScreen='history'; renderAll(); }
+function renderHistScreen(){
+  const hist=JSON.parse(localStorage.getItem('soba-pdf-hist3')||'[]');
+  const cards=hist.map((h,i)=>`
+    <div class="hist-card">
+      <div style="font-size:24px">📄</div>
+      <div class="hc-info">
+        <div class="hc-title">${esc(h.filename||'')}</div>
+        <div class="hc-meta">${h.savedAt||''}　｜　${esc(h.event||'')}</div>
+      </div>
+      <button class="hdel" onclick="deleteHistEntry(${i})">削除</button>
+    </div>`).join('');
+  document.getElementById('main').innerHTML=`
+  <div class="hist-screen">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <h2 style="font-size:18px;font-weight:900;color:var(--soba)">🗂 PDF保存履歴</h2>
+      <div style="flex:1"></div>
+      <button onclick="clearHist()" style="background:#FEF2F2;color:var(--red);border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">全削除</button>
+    </div>
+    ${cards||'<p style="color:var(--muted);font-size:14px">まだ履歴はありません。</p>'}
+  </div>`;
+}
+function deleteHistEntry(i){
+  const h=JSON.parse(localStorage.getItem('soba-pdf-hist3')||'[]');
+  h.splice(i,1); localStorage.setItem('soba-pdf-hist3',JSON.stringify(h));
+  renderHistScreen();
+}
+function clearHist(){
+  if(!confirm('履歴を全削除しますか？'))return;
+  localStorage.removeItem('soba-pdf-hist3'); renderHistScreen();
+}
+
+// ═══════════════════════════════════════════════
+// PDF EXPORT
+// ═══════════════════════════════════════════════
+async function exportPDF(){
+  if(!currentEvent){toast('イベントを選択してください');return;}
+  const btn=document.getElementById('pdf-btn');
+  btn.textContent='⏳ 生成中...'; btn.disabled=true;
+  const ev=S.events[currentEvent];
+  const allItems=S.items[currentEvent]||{};
+  const checks=S.checks[currentEvent]||{};
+  let body='';
+  const colorMap={sale:'#1A5E3A',inst:'#1A3E7C',other:'#5B21B6'};
+  for(const [type,tm] of Object.entries(TYPE_META)){
+    let typeSec='', typeTotal=0, typeDone=0;
+    for(const role of Object.keys(allItems[type]||{})){
+      const roleItems=Object.values(allItems[type][role]||{});
+      if(!roleItems.length)continue;
+      const done=roleItems.filter(it=>checks[it.id]?.checked).length;
+      typeTotal+=roleItems.length; typeDone+=done;
+      const rows=roleItems.map(it=>{
+        const c=checks[it.id];
+        return `<tr style="background:${c?.checked?'#EDF7F2':'#fff'}">
+          <td style="padding:5px 8px;border:1px solid #DDD;font-size:11px">${esc(it.name)}</td>
+          <td style="padding:5px 8px;border:1px solid #DDD;font-size:11px;color:#666">${esc(it.qty||'')}</td>
+          <td style="padding:5px 8px;border:1px solid #DDD;text-align:center;font-size:12px;color:${colorMap[type]}">${c?.checked?'✓':''}</td>
+          <td style="padding:5px 8px;border:1px solid #DDD;font-size:10px;color:#555">${c?.by?esc(c.by)+'　'+esc(c.at||''):''}</td>
+        </tr>`;
+      }).join('');
+      typeSec+=`<div style="margin-bottom:14px">
+        <div style="background:#F5F0E8;padding:5px 10px;border-left:4px solid ${colorMap[type]};font-size:12px;font-weight:700;margin-bottom:6px;border-radius:0 4px 4px 0">${role}　${done}/${roleItems.length}</div>
+        <table style="width:100%;border-collapse:collapse">
+          <tr style="background:#EDE8DF">
+            <th style="padding:5px 8px;border:1px solid #CCC;text-align:left;font-size:11px;width:37%">道具名</th>
+            <th style="padding:5px 8px;border:1px solid #CCC;text-align:left;font-size:11px;width:24%">個数・メモ</th>
+            <th style="padding:5px 8px;border:1px solid #CCC;text-align:center;font-size:11px;width:10%">✓</th>
+            <th style="padding:5px 8px;border:1px solid #CCC;text-align:left;font-size:11px;width:29%">担当者</th>
+          </tr>${rows}
+        </table>
+        ${buildApvPdfHTML(type,role)}
+      </div>`;
+    }
+    if(!typeSec)continue;
+    body+=`<div style="margin-bottom:22px">
+      <div style="background:${colorMap[type]};color:#fff;padding:8px 14px;border-radius:6px 6px 0 0;font-size:14px;font-weight:900;display:flex;justify-content:space-between">
+        <span>${tm.icon} ${tm.label}</span><span>${typeDone}/${typeTotal}</span>
+      </div>
+      <div style="border:1px solid #CCC;border-top:none;border-radius:0 0 6px 6px;padding:14px">${typeSec}</div>
+    </div>`;
+  }
+  const area=document.getElementById('pdf-area');
+  area.innerHTML=`<style>@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+  *{box-sizing:border-box;font-family:'Noto Sans JP',sans-serif}</style>
+  <div style="padding:36px 44px;background:#fff;width:820px">
+    <div style="text-align:center;margin-bottom:20px;border-bottom:3px solid #5C3D11;padding-bottom:14px">
+      <h1 style="font-size:20px;font-weight:900;color:#5C3D11;letter-spacing:.08em">そば部　道具チェックリスト</h1>
+      <p style="font-size:12px;color:#666;margin-top:4px">啓新高等学校 そば部　｜　${esc(ev.name)}　${esc(ev.date||'')}　｜　出力：${nowStr()}</p>
+    </div>
+    ${body}
+  </div>`;
+  await document.fonts.ready;
+  await new Promise(r=>setTimeout(r,500));
+  try{
+    const canvas=await html2canvas(area,{scale:2,useCORS:true,backgroundColor:'#fff',width:820,windowWidth:820,logging:false});
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight();
+    const fullH=canvas.height*pw/canvas.width;
+    let y=0,page=0;
+    while(y<fullH){
+      if(page>0)pdf.addPage();
+      const srcY=y/fullH*canvas.height;
+      const sliceH=Math.min(ph/fullH*canvas.height, canvas.height-srcY);
+      const sc=document.createElement('canvas');
+      sc.width=canvas.width; sc.height=Math.round(sliceH);
+      sc.getContext('2d').drawImage(canvas,0,srcY,canvas.width,sliceH,0,0,canvas.width,sliceH);
+      pdf.addImage(sc.toDataURL('image/jpeg',.96),'JPEG',0,0,pw,ph);
+      y+=ph; page++;
+    }
+    const fname=`そば部チェックリスト_${ev.name}_${(ev.date||todayStr()).replace(/-/g,'')}.pdf`;
+    pdf.save(fname);
+    const hist=JSON.parse(localStorage.getItem('soba-pdf-hist3')||'[]');
+    hist.unshift({filename:fname,event:ev.name,savedAt:nowStr()});
+    if(hist.length>50)hist.pop();
+    localStorage.setItem('soba-pdf-hist3',JSON.stringify(hist));
+    toast('✅ PDFを保存しました',3000);
+  }catch(e){console.error(e);alert('PDF生成エラー:\n'+e.message);}
+  btn.textContent='📥 PDF保存'; btn.disabled=false;
+  area.innerHTML='';
+}
+
+// ═══════════════════════════════════════════════
+// FIREBASE CONFIG
+// ═══════════════════════════════════════════════
+function openFbModal(){
+  const c=JSON.parse(localStorage.getItem('soba-fb-cfg')||'{}');
+  document.getElementById('fb-url').value=c.databaseURL||'';
+  document.getElementById('fb-apikey').value=c.apiKey||'';
+  document.getElementById('fb-pid').value=c.projectId||'';
+  document.getElementById('cfg-username').value=userName||'';
+  // 部員名簿ドロップダウンを動的生成
+  const pickEl=document.getElementById('cfg-member-pick');
+  const members=Object.values(S.members||{}).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  if(members.length){
+    const opts=members.map(m=>`<option value="${esc(m.name)}"${m.name===userName?' selected':''}>${esc(m.name)}（${esc(m.grade||'')}）</option>`).join('');
+    pickEl.innerHTML=`<select onchange="document.getElementById('cfg-username').value=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;margin-bottom:0;background:#fff">
+      <option value="">── 名簿から選択 ──</option>${opts}
+    </select>`;
+  } else {
+    pickEl.innerHTML='<p style="font-size:11px;color:var(--muted);margin-bottom:4px">（部員名簿を登録すると選択できます）</p>';
+  }
+  openModal('fb-modal');
+}
+
+function saveUserName(){
+  const n=document.getElementById('cfg-username').value.trim();
+  if(!n){toast('名前を入力してください');return;}
+  userName=n;
+  localStorage.setItem('soba-user',n);
+  toast(`✅ 名前を「${n}」に変更しました`);
+}
+
+// 初回ログイン: 名簿があれば選択モーダル、なければprompt
+function askName(){
+  if(userName) return userName;
+  const members=Object.values(S.members||{}).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  if(members.length){
+    // 名簿がある → 名前選択モーダルを出す
+    showNamePickerModal();
+  } else {
+    // 名簿なし → promptフォールバック
+    let n=prompt('あなたのお名前を入力してください\n（チェック時に表示されます。次回から自動入力されます）','')||'担当者';
+    userName=n.trim();
+    localStorage.setItem('soba-user',userName);
+  }
+  return userName;
+}
+
+function showNamePickerModal(){
+  // 専用の名前選択モーダルを動的に作成
+  let modal=document.getElementById('name-picker-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='name-picker-modal';
+    modal.className='modal-bg';
+    modal.style.cssText='display:flex;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:600;align-items:center;justify-content:center';
+    document.body.appendChild(modal);
+  }
+  const members=Object.values(S.members||{}).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const opts=members.map(m=>`<option value="${esc(m.name)}">${esc(m.name)}（${esc(m.grade||'')}）</option>`).join('');
+  modal.innerHTML=`<div class="modal" style="width:380px">
+    <h3 style="margin-bottom:4px">👤 あなたは誰ですか？</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">チェック時に名前が記録されます。次回から自動入力されます。</p>
+    <label>名簿から選択</label>
+    <select id="np-select" style="width:100%;border:1.5px solid var(--border);border-radius:7px;padding:9px 11px;font-size:14px;font-family:inherit;outline:none;margin-bottom:12px">
+      <option value="">── 選択してください ──</option>${opts}
+    </select>
+    <label>または直接入力</label>
+    <input type="text" id="np-text" placeholder="名簿にない場合はここに入力"
+      style="width:100%;border:1.5px solid var(--border);border-radius:7px;padding:8px 11px;font-size:13px;font-family:inherit;outline:none;margin-bottom:4px">
+    <div class="modal-btns" style="margin-top:14px">
+      <button class="mbtn ok" onclick="confirmNamePicker()" style="width:100%;padding:11px">決定</button>
+    </div>
+  </div>`;
+  // selectが変わったらtextをクリア、textが変わったらselectをクリア
+  modal.querySelector('#np-select').onchange=function(){ if(this.value) modal.querySelector('#np-text').value=''; };
+  modal.querySelector('#np-text').oninput=function(){ if(this.value) modal.querySelector('#np-select').value=''; };
+}
+
+function confirmNamePicker(){
+  const sel=document.getElementById('np-select')?.value;
+  const txt=document.getElementById('np-text')?.value.trim();
+  const n=(sel||txt||'').trim();
+  if(!n){toast('名前を選択または入力してください');return;}
+  userName=n;
+  localStorage.setItem('soba-user',n);
+  const modal=document.getElementById('name-picker-modal');
+  if(modal) modal.style.display='none';
+  toast(`✅ 「${n}」として記録します`);
+  renderAll();
+}
+function saveFbCfg(){
+  const url=document.getElementById('fb-url').value.trim();
+  const key=document.getElementById('fb-apikey').value.trim();
+  const pid=document.getElementById('fb-pid').value.trim();
+  if(!url){toast('Database URLを入力してください');return;}
+  localStorage.setItem('soba-fb-cfg',JSON.stringify({
+    databaseURL:url,apiKey:key,projectId:pid,
+    authDomain:`${pid}.firebaseapp.com`,storageBucket:`${pid}.appspot.com`,
+    messagingSenderId:'000000000000',appId:'1:000000000000:web:0000'
+  }));
+  closeModal('fb-modal');
+  toast('保存しました。ページを再読み込みします…',1500);
+  setTimeout(()=>location.reload(),1600);
+}
+
+// ═══════════════════════════════════════════════
+// ① 役割分担表
+// ═══════════════════════════════════════════════
+function renderRosterScreen(){
+  if(!currentEvent){ document.getElementById('main').innerHTML=noEvMsg(); return; }
+  const ev=S.events[currentEvent];
+  if(!S.roster[currentEvent]) S.roster[currentEvent]={};
+  const roster=S.roster[currentEvent];
+
+  let cards='';
+  for(const [type,tm] of Object.entries(TYPE_META)){
+    for(const role of tm.roles){
+      const key=`${type}_${role}`;
+      const members=roster[key]||[];
+      const memberRows=members.map((m,i)=>`
+        <div class="roster-member">
+          <span style="font-size:16px">${m.icon||'👤'}</span>
+          <span class="roster-member-name">${esc(m.name)}</span>
+          <span class="roster-member-note">${esc(m.note||'')}</span>
+          <button onclick="removeRosterMember('${key}',${i})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:13px;padding:0 3px">×</button>
+        </div>`).join('');
+      const memberOptions = Object.values(S.members||{})
+        .sort((a,b)=>(a.name||'').localeCompare(b.name||''))
+        .map(m=>`<option value="${esc(m.name)}">${esc(m.name)}（${esc(m.grade||'')}）</option>`)
+        .join('');
+      const memberSelect = memberOptions
+        ? `<select id="rs-${key}" style="flex:1;min-width:0;border:1.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;outline:none" onchange="document.getElementById('rm-${key}').value=this.value">
+            <option value="">名簿から選択...</option>${memberOptions}
+          </select>`
+        : '';
+      cards+=`<div class="roster-card">
+        <div class="roster-head ${type}">${tm.icon} ${tm.label} › ${role}</div>
+        <div class="roster-member-list">${memberRows||'<span style="font-size:12px;color:var(--muted)">（未設定）</span>'}</div>
+        <div class="roster-add-row" style="flex-direction:column;gap:6px">
+          ${memberSelect}
+          <div style="display:flex;gap:6px">
+            <input id="rm-${key}" placeholder="名前（直接入力も可）" onkeydown="if(event.key==='Enter')addRosterMember('${key}')">
+            <input id="rn-${key}" placeholder="メモ" style="max-width:90px">
+            <button class="roster-add-btn" onclick="addRosterMember('${key}')">＋</button>
+          </div>
+        </div>
+      </div>`;
+    }
+  }
+
+  document.getElementById('main').innerHTML=`
+  <div class="page-screen">
+    <h2>👥 当日役割分担表</h2>
+    <p class="page-sub">${esc(ev.name)} ${ev.date||''}</p>
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <button onclick="exportRosterPDF()" class="roster-add-btn" style="font-size:13px;padding:8px 16px">📥 分担表PDF出力</button>
+      <button onclick="clearRoster()" style="background:#FEF2F2;color:var(--red);border:1px solid var(--red);border-radius:6px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">全リセット</button>
+    </div>
+    <div class="roster-grid">${cards}</div>
+  </div>`;
+}
+function addRosterMember(key){
+  const nameEl=document.getElementById(`rm-${key}`);
+  const noteEl=document.getElementById(`rn-${key}`);
+  const name=nameEl?.value.trim();
+  if(!name)return;
+  const icons=['👤','👩','🧑','👦','👧'];
+  if(!S.roster[currentEvent]) S.roster[currentEvent]={};
+  if(!S.roster[currentEvent][key]) S.roster[currentEvent][key]=[];
+  S.roster[currentEvent][key].push({name,note:noteEl?.value.trim()||'',icon:icons[Math.floor(Math.random()*icons.length)]});
+  nameEl.value=''; if(noteEl)noteEl.value='';
+  persist();
+}
+function removeRosterMember(key,idx){
+  S.roster[currentEvent]?.[key]?.splice(idx,1);
+  persist();
+}
+function clearRoster(){
+  if(!confirm('分担表をリセットしますか？'))return;
+  S.roster[currentEvent]={};
+  persist();
+}
+async function exportRosterPDF(){
+  const ev=S.events[currentEvent];
+  const roster=S.roster[currentEvent]||{};
+  let rows='';
+  for(const [type,tm] of Object.entries(TYPE_META)){
+    for(const role of tm.roles){
+      const key=`${type}_${role}`;
+      const members=roster[key]||[];
+      const colorMap={sale:'#1A5E3A',inst:'#1A3E7C',other:'#5B21B6'};
+      rows+=`<tr>
+        <td style="padding:6px 10px;border:1px solid #CCC;font-size:11px;font-weight:700;color:${colorMap[type]};white-space:nowrap">${tm.icon} ${tm.label}</td>
+        <td style="padding:6px 10px;border:1px solid #CCC;font-size:11px;font-weight:700">${role}</td>
+        <td style="padding:6px 10px;border:1px solid #CCC;font-size:12px">${members.map(m=>esc(m.name)+(m.note?`（${esc(m.note)}）`:'')).join('　')||'—'}</td>
+      </tr>`;
+    }
+  }
+  const area=document.getElementById('pdf-area');
+  area.innerHTML=`<style>@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');*{box-sizing:border-box;font-family:'Noto Sans JP',sans-serif}</style>
+  <div style="padding:36px 44px;background:#fff;width:820px">
+    <h1 style="font-size:20px;font-weight:900;color:#5C3D11;text-align:center;margin-bottom:4px">そば部 当日役割分担表</h1>
+    <p style="text-align:center;font-size:12px;color:#666;margin-bottom:20px">${esc(ev.name)} ${ev.date||''}　｜　作成：${nowStr()}</p>
+    <table style="width:100%;border-collapse:collapse">
+      <tr style="background:#5C3D11;color:#fff">
+        <th style="padding:6px 10px;font-size:11px;text-align:left;width:20%">種別</th>
+        <th style="padding:6px 10px;font-size:11px;text-align:left;width:15%">役割</th>
+        <th style="padding:6px 10px;font-size:11px;text-align:left">担当者</th>
+      </tr>${rows}
+    </table>
+  </div>`;
+  await document.fonts.ready; await new Promise(r=>setTimeout(r,400));
+  try{
+    const canvas=await html2canvas(area,{scale:2,useCORS:true,backgroundColor:'#fff',width:820,windowWidth:820,logging:false});
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight();
+    const fullH=canvas.height*pw/canvas.width;
+    let y=0,page=0;
+    while(y<fullH){
+      if(page>0)pdf.addPage();
+      const srcY=y/fullH*canvas.height;
+      const sliceH=Math.min(ph/fullH*canvas.height, canvas.height-srcY);
+      const sc=document.createElement('canvas');
+      sc.width=canvas.width; sc.height=Math.round(sliceH);
+      sc.getContext('2d').drawImage(canvas,0,srcY,canvas.width,sliceH,0,0,canvas.width,sliceH);
+      pdf.addImage(sc.toDataURL('image/jpeg',.96),'JPEG',0,0,pw,ph);
+      y+=ph; page++;
+    }
+    pdf.save(`役割分担表_${ev.name}_${(ev.date||todayStr()).replace(/-/g,'')}.pdf`);
+    toast('✅ 役割分担表PDFを保存しました');
+  }catch(e){alert('PDF生成エラー:'+e.message);}
+  area.innerHTML='';
+}
+
+// ═══════════════════════════════════════════════
+// ② 消耗品消費ペース記録
+// ═══════════════════════════════════════════════
+const DEFAULT_CONSUMABLES=[
+  {name:'ガスボンベ',unit:'本'},
+  {name:'食器用洗剤',unit:'本'},
+  {name:'スポンジ',unit:'個'},
+  {name:'ゴミ袋',unit:'枚'},
+  {name:'ペーパータオル',unit:'ロール'},
+  {name:'ビニール袋（会計用）',unit:'枚'},
+  {name:'そば粉',unit:'kg'},
+];
+function renderConsumableScreen(){
+  if(!currentEvent){ document.getElementById('main').innerHTML=noEvMsg(); return; }
+  const ev=S.events[currentEvent];
+  if(!S.consumables[currentEvent]) S.consumables[currentEvent]={};
+  const cur=S.consumables[currentEvent];
+  // 全イベントの同品目履歴を集計
+  const allEvIds=Object.keys(S.events).sort((a,b)=>S.events[a].createdAt-S.events[b].createdAt);
+  // マスター消耗品リスト（イベントに入力があるものも含む）
+  const names=new Set(DEFAULT_CONSUMABLES.map(c=>c.name));
+  Object.values(S.consumables).forEach(evC=>Object.keys(evC).forEach(n=>names.add(n)));
+
+  let tableRows='';
+  for(const name of names){
+    const unit=DEFAULT_CONSUMABLES.find(c=>c.name===name)?.unit||'個';
+    const curVal=cur[name]?.used||'';
+    // 過去の履歴を集計して平均・トレンドを計算
+    const history=allEvIds.map(eid=>({ev:S.events[eid]?.name,val:parseFloat(S.consumables[eid]?.[name]?.used)||null})).filter(h=>h.val!==null&&h.ev!==ev.name);
+    const avg=history.length?Math.round(history.reduce((s,h)=>s+h.val,0)/history.length*10)/10:null;
+    let trend='',trendCls='same';
+    if(avg!==null&&curVal!==''){const v=parseFloat(curVal);if(v>avg){trend='▲';trendCls='up';}else if(v<avg){trend='▼';trendCls='down';}}
+    const histTxt=history.slice(-3).map(h=>`${h.ev}:${h.val}${unit}`).join(' / ');
+    tableRows+=`<tr>
+      <td style="font-weight:700">${esc(name)}</td>
+      <td><input type="number" min="0" value="${curVal}" placeholder="0" onchange="saveConsumable('${name}',this.value)">　${unit}</td>
+      <td>${avg!==null?`平均 ${avg}${unit}`:'-'}</td>
+      <td><span class="con-trend ${trendCls}">${trend}</span></td>
+      <td style="font-size:11px;color:var(--muted)">${histTxt||'-'}</td>
+    </tr>`;
+  }
+
+  document.getElementById('main').innerHTML=`
+  <div class="page-screen">
+    <h2>📦 消耗品消費ペース記録</h2>
+    <p class="page-sub">${esc(ev.name)} ${ev.date||''}</p>
+    <table class="consumable-table">
+      <tr>
+        <th style="width:20%">品名</th><th style="width:18%">今回使用量</th>
+        <th style="width:15%">過去平均</th><th style="width:8%">比較</th>
+        <th>過去3回の実績</th>
+      </tr>${tableRows}
+    </table>
+    <div class="add-row" style="max-width:500px">
+      <input class="ni" id="con-new-name" placeholder="消耗品名を追加">
+      <input class="qi" id="con-new-unit" placeholder="単位（例：本）" style="width:100px">
+      <button class="add-btn" onclick="addConsumableItem()">＋ 追加</button>
+    </div>
+  </div>`;
+}
+function saveConsumable(name,val){
+  if(!S.consumables[currentEvent]) S.consumables[currentEvent]={};
+  S.consumables[currentEvent][name]={used:val, at:nowStr()};
+  persist();
+}
+function addConsumableItem(){
+  const name=document.getElementById('con-new-name')?.value.trim();
+  if(!name)return;
+  if(!S.consumables[currentEvent]) S.consumables[currentEvent]={};
+  S.consumables[currentEvent][name]={used:'',at:''};
+  persist(); renderConsumableScreen();
+}
+
+// ═══════════════════════════════════════════════
+// ③ 持ち出し・返却記録
+// ═══════════════════════════════════════════════
+function renderLendingScreen(){
+  const lending=S.lending||[];
+  const mkCard=(l,i,isRet)=>`
+    <div class="lending-card${isRet?' returned':''}">
+      <div class="lc-icon">${isRet?'✅':'🔑'}</div>
+      <div class="lc-info">
+        <div class="lc-name">${esc(l.name)} <span style="font-size:11px;color:var(--muted)">${esc(l.qty||'')}</span></div>
+        <div class="lc-meta">持ち出し：${esc(l.person||'')}　${esc(l.date||'')}<br>${l.memo?esc(l.memo):''}${isRet?'<br>返却：'+esc(l.returnedAt||''):''}</div>
+      </div>
+      <span class="lc-status ${isRet?'back':'out'}">${isRet?'返却済':'持ち出し中'}</span>
+      <div class="lc-btns">
+        ${!isRet?`<button class="lc-btn ret" onclick="returnLending(${i})">返却</button>`:''}
+        <button class="lc-btn del" onclick="deleteLending(${i})">削除</button>
+      </div>
+    </div>`;
+  // 元の配列インデックスを保持して分類
+  const outCards = lending.map((l,i)=>({l,i})).filter(({l})=>!l.returned).map(({l,i})=>mkCard(l,i,false)).join('');
+  const retCards = lending.map((l,i)=>({l,i})).filter(({l})=> l.returned).map(({l,i})=>mkCard(l,i,true)).join('');
+  const outCount = lending.filter(l=>!l.returned).length;
+  const retCount = lending.filter(l=> l.returned).length;
+  document.getElementById('main').innerHTML=`
+  <div class="page-screen">
+    <h2>🔑 道具 持ち出し・返却管理</h2>
+    <p class="page-sub">全イベント共通の台帳です</p>
+    <button onclick="openLendingModal()" class="roster-add-btn" style="font-size:13px;padding:9px 18px;margin-bottom:16px">＋ 持ち出し登録</button>
+    <div style="font-size:13px;font-weight:900;color:var(--soba);margin-bottom:8px">持ち出し中 (${outCount}件)</div>
+    <div class="lending-list">${outCards||'<p style="color:var(--muted);font-size:13px">現在の持ち出しはありません。</p>'}</div>
+    <div style="font-size:13px;font-weight:900;color:var(--muted);margin-bottom:8px;margin-top:16px">返却済 (${retCount}件)</div>
+    <div class="lending-list">${retCards||'<p style="color:var(--muted);font-size:13px">返却済の記録はありません。</p>'}</div>
+  </div>`;
+}
+function openLendingModal(){
+  document.getElementById('lend-modal-title').textContent='🔑 持ち出し登録';
+  ['lend-name','lend-qty','lend-person','lend-memo'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('lend-date').value=todayStr();
+  openModal('lending-modal');
+}
+function saveLending(){
+  const name=document.getElementById('lend-name').value.trim();
+  if(!name){toast('道具名を入力してください');return;}
+  const entry={
+    id:uid(),name,qty:document.getElementById('lend-qty').value.trim(),
+    person:document.getElementById('lend-person').value.trim(),
+    date:document.getElementById('lend-date').value,
+    memo:document.getElementById('lend-memo').value.trim(),
+    returned:false,returnedAt:'',createdAt:Date.now()
+  };
+  if(!S.lending) S.lending=[];
+  S.lending.unshift(entry);
+  closeModal('lending-modal'); persist(); toast('✅ 持ち出しを登録しました');
+}
+function returnLending(i){
+  if(!S.lending[i])return;
+  S.lending[i].returned=true;
+  S.lending[i].returnedAt=nowStr();
+  persist(); toast('✅ 返却を記録しました');
+}
+function deleteLending(i){
+  if(!confirm('この記録を削除しますか？'))return;
+  S.lending.splice(i,1);
+  persist();
+}
+
+// ═══════════════════════════════════════════════
+// ④ 振り返り機能
+// ═══════════════════════════════════════════════
+let reviewStars={overall:0,prep:0,team:0};
+function renderReviewScreen(){
+  if(!currentEvent){ document.getElementById('main').innerHTML=noEvMsg(); return; }
+  const ev=S.events[currentEvent];
+  if(!S.reviews) S.reviews={};
+  const saved=S.reviews[currentEvent]||{};
+  reviewStars={overall:saved.overall||0,prep:saved.prep||0,team:saved.team||0};
+
+  // 他イベントの振り返りを履歴として表示
+  const histItems=Object.entries(S.reviews)
+    .filter(([id])=>id!==currentEvent&&S.events[id])
+    .sort((a,b)=>S.events[b[0]]?.createdAt-S.events[a[0]]?.createdAt)
+    .slice(0,5)
+    .map(([id,r])=>`<div class="review-history-item">
+      <div class="review-ev-label">${esc(S.events[id].name)} ${S.events[id].date||''}</div>
+      <div style="display:flex;gap:12px;margin-bottom:4px">
+        <span>総合 ${'⭐'.repeat(r.overall||0)}</span>
+        <span>準備 ${'⭐'.repeat(r.prep||0)}</span>
+        <span>チーム ${'⭐'.repeat(r.team||0)}</span>
+      </div>
+      ${r.good?`<div style="font-size:12px">👍 ${esc(r.good)}</div>`:''}
+      ${r.improve?`<div style="font-size:12px">🔧 ${esc(r.improve)}</div>`:''}
+      ${r.next?`<div style="font-size:12px">➡️ ${esc(r.next)}</div>`:''}
+    </div>`).join('');
+
+  const starRow=(key,label)=>{
+    const stars=[1,2,3,4,5].map(n=>`<span class="star${reviewStars[key]>=n?' active':''}" onclick="setReviewStar('${key}',${n})">⭐</span>`).join('');
+    return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+      <span style="font-size:13px;font-weight:700;width:70px">${label}</span>
+      <div class="star-row" style="margin-bottom:0">${stars}</div>
+    </div>`;
+  };
+
+  document.getElementById('main').innerHTML=`
+  <div class="page-screen">
+    <h2>💬 イベント振り返り</h2>
+    <p class="page-sub">${esc(ev.name)} ${ev.date||''}</p>
+    <div class="review-section">
+      <h3>⭐ 評価</h3>
+      ${starRow('overall','総合評価')}
+      ${starRow('prep','準備・道具')}
+      ${starRow('team','チームワーク')}
+    </div>
+    <div class="review-section">
+      <h3>👍 よかったこと</h3>
+      <textarea class="review-textarea" id="rv-good" placeholder="例：道具の準備が早くできた。受付の流れがスムーズだった。">${esc(saved.good||'')}</textarea>
+    </div>
+    <div class="review-section">
+      <h3>🔧 改善したいこと</h3>
+      <textarea class="review-textarea" id="rv-improve" placeholder="例：ガスボンベの予備が不足した。ゆで時間のコントロールが難しかった。">${esc(saved.improve||'')}</textarea>
+    </div>
+    <div class="review-section">
+      <h3>➡️ 次回に向けて</h3>
+      <textarea class="review-textarea" id="rv-next" placeholder="例：ガスボンベを8本用意する。役割ごとの手順書を事前に配布する。">${esc(saved.next||'')}</textarea>
+    </div>
+    <button class="review-save-btn" onclick="saveReview()">💾 振り返りを保存</button>
+    ${histItems?`<div class="review-section" style="margin-top:20px"><h3>📋 過去の振り返り</h3>${histItems}</div>`:''}
+  </div>`;
+}
+function setReviewStar(key,val){
+  reviewStars[key]=val;
+  // テキストを保持してから再描画
+  const good=document.getElementById('rv-good')?.value||'';
+  const improve=document.getElementById('rv-improve')?.value||'';
+  const next=document.getElementById('rv-next')?.value||'';
+  renderReviewScreen();
+  if(document.getElementById('rv-good'))    document.getElementById('rv-good').value=good;
+  if(document.getElementById('rv-improve')) document.getElementById('rv-improve').value=improve;
+  if(document.getElementById('rv-next'))    document.getElementById('rv-next').value=next;
+}
+function saveReview(){
+  if(!S.reviews) S.reviews={};
+  S.reviews[currentEvent]={
+    overall:reviewStars.overall, prep:reviewStars.prep, team:reviewStars.team,
+    good:document.getElementById('rv-good')?.value.trim()||'',
+    improve:document.getElementById('rv-improve')?.value.trim()||'',
+    next:document.getElementById('rv-next')?.value.trim()||'',
+    savedAt:nowStr()
+  };
+  persist(); toast('✅ 振り返りを保存しました');
+}
+
+// ═══════════════════════════════════════════════
+// ⑤ 不足・破損レポート
+// ═══════════════════════════════════════════════
+function renderReportScreen(){
+  if(!S.reports) S.reports=[];
+  const reports=S.reports;
+  const typeLabel={shortage:'不足',broken:'破損・故障',lost:'紛失',other:'その他'};
+  const mkCard=(r,i)=>`
+    <div class="report-card ${r.priority}${r.resolved?' resolved':''}">
+      <div style="flex-shrink:0;font-size:20px">${r.priority==='high'?'🔴':r.priority==='mid'?'🟡':'🟢'}</div>
+      <div class="rp-body">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
+          <span class="rp-name">${esc(r.name)}</span>
+          <span class="rp-badge ${r.type}">${typeLabel[r.type]||r.type}</span>
+          ${r.resolved?'<span style="font-size:11px;color:var(--sale);font-weight:700">✅ 解決済</span>':''}
+        </div>
+        <div class="rp-detail">${esc(r.detail||'')}</div>
+        <div class="rp-meta">${r.by?esc(r.by)+' ／ ':''} ${r.at||''} ／ ${esc(r.eventName||'')}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+        ${!r.resolved?`<button onclick="resolveReport(${i})" class="lc-btn ret">解決</button>`:''}
+        <button onclick="deleteReport(${i})" class="lc-btn del">削除</button>
+      </div>
+    </div>`;
+  // 元の配列インデックスを保持しつつ未解決・解決済に分ける
+  const openCards  = reports.map((r,i)=>({r,i})).filter(({r})=>!r.resolved).map(({r,i})=>mkCard(r,i)).join('');
+  const closedCards= reports.map((r,i)=>({r,i})).filter(({r})=> r.resolved).map(({r,i})=>mkCard(r,i)).join('');
+  const openCount  = reports.filter(r=>!r.resolved).length;
+  const closedCount= reports.filter(r=> r.resolved).length;
+  document.getElementById('main').innerHTML=`
+  <div class="page-screen">
+    <h2>⚠️ 不足・破損レポート</h2>
+    <p class="page-sub">全イベント共通の報告台帳</p>
+    <button onclick="openModal('report-modal')" style="background:var(--red);color:#fff;border:none;border-radius:7px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:16px">＋ 新しい報告を追加</button>
+    <div style="font-size:13px;font-weight:900;color:var(--soba);margin-bottom:8px">未解決 (${openCount}件)</div>
+    ${openCards||'<p style="color:var(--muted);font-size:13px;margin-bottom:16px">未解決の報告はありません。</p>'}
+    <div style="font-size:13px;font-weight:900;color:var(--muted);margin-bottom:8px;margin-top:16px">解決済 (${closedCount}件)</div>
+    ${closedCards||'<p style="color:var(--muted);font-size:13px">解決済の報告はありません。</p>'}
+  </div>`;
+}
+function submitReport(){
+  const name=document.getElementById('rp-name').value.trim();
+  if(!name){toast('道具名を入力してください');return;}
+  if(!S.reports) S.reports=[];
+  S.reports.unshift({
+    id:uid(),name,type:document.getElementById('rp-type').value,
+    detail:document.getElementById('rp-detail').value.trim(),
+    priority:document.getElementById('rp-priority').value,
+    by:userName,at:nowStr(),
+    eventName:currentEvent?S.events[currentEvent]?.name||'':' ',
+    resolved:false,resolvedAt:''
+  });
+  closeModal('report-modal');
+  ['rp-name','rp-detail'].forEach(id=>document.getElementById(id).value='');
+  persist(); toast('✅ 報告を記録しました');
+}
+function resolveReport(i){
+  S.reports[i].resolved=true;
+  S.reports[i].resolvedAt=nowStr();
+  persist(); toast('✅ 解決済みにしました');
+}
+function deleteReport(i){
+  if(!confirm('この報告を削除しますか？'))return;
+  S.reports.splice(i,1);
+  persist();
+}
+
+// ── FAB（不足・破損ボタン）─ チェック画面のみ表示 ──
+function updateFAB(){
+  let fab=document.getElementById('report-fab');
+  if(curScreen==='check'){
+    if(!fab){
+      fab=document.createElement('button');
+      fab.id='report-fab';
+      fab.className='report-fab';
+      fab.innerHTML='⚠️ 不足・破損を報告';
+      fab.onclick=()=>openModal('report-modal');
+      document.body.appendChild(fab);
+    }
+    fab.style.display='';
+  } else {
+    if(fab) fab.style.display='none';
+  }
+}
+
+// ═══════════════════════════════════════════════
+// 部員名簿
+// ═══════════════════════════════════════════════
+let memberFilter = 'all';   // 'all' | '1年' | '2年' | '3年' | '顧問' | 'OB/OG'
+let memberEditId = null;
+
+const GRADE_COLOR = {'1年':'#2E8B57','2年':'#2E60BF','3年':'#D97706','顧問':'#5C3D11','OB/OG':'#7C3AED'};
+
+function renderMembersScreen(){
+  if(!S.members) S.members={};
+  const all = Object.values(S.members).sort((a,b)=>{
+    const gradeOrder={'1年':1,'2年':2,'3年':3,'顧問':4,'OB/OG':5};
+    const gd = (gradeOrder[a.grade]||9) - (gradeOrder[b.grade]||9);
+    if(gd!==0) return gd;
+    const roleOrder={'部長':1,'副部長':2,'会計':3,'記録':4,'顧問':5,'部員':9};
+    return (roleOrder[a.role]||8) - (roleOrder[b.role]||8);
+  });
+  const filtered = memberFilter==='all' ? all : all.filter(m=>m.grade===memberFilter);
+
+  // 統計
+  const total = all.length;
+  const byGrade = {};
+  all.forEach(m=>{ byGrade[m.grade]=(byGrade[m.grade]||0)+1; });
+  const statsHTML = `
+    <div class="member-stats">
+      <div class="mstat"><div class="mstat-num">${total}</div><div class="mstat-label">総部員数</div></div>
+      ${Object.entries(byGrade).map(([g,n])=>`<div class="mstat"><div class="mstat-num" style="color:${GRADE_COLOR[g]||'var(--soba)'}">${n}</div><div class="mstat-label">${g}</div></div>`).join('')}
+    </div>`;
+
+  // フィルタバー
+  const grades = ['all','1年','2年','3年','顧問','OB/OG'];
+  const filterBar = `<div class="member-filter-bar">
+    ${grades.map(g=>`<button class="mf-btn${memberFilter===g?' active':''}" onclick="setMemberFilter('${g}')">${g==='all'?'全員':g}</button>`).join('')}
+    <button class="mf-btn" onclick="exportMemberPDF()" style="margin-left:auto">📥 名簿PDF</button>
+  </div>`;
+
+  // カード
+  const cards = filtered.map(m=>{
+    const initials = (m.name||'?').replace(/\s/g,'').slice(-1);
+    const gc = GRADE_COLOR[m.grade]||'#888';
+    const gradeNum = m.grade?.replace('年','') || m.grade || '?';
+    const roleTag = m.role ? `<span class="member-tag role-${['部長','副部長','顧問'].includes(m.role)?m.role:'other'}">${m.role}</span>` : '';
+    const gradeTag = m.grade ? `<span class="member-tag grade">${m.grade}</span>` : '';
+    return `<div class="member-card">
+      <div class="member-avatar grade-${m.grade?.replace('/','')}" style="background:${gc}">${initials}</div>
+      <div class="member-info">
+        <div class="member-name">${esc(m.name||'')}${roleTag}</div>
+        <div class="member-kana">${esc(m.kana||'')}</div>
+        <div class="member-meta">${gradeTag}</div>
+        ${m.contact||m.email?`<div class="member-contact">${m.contact?'📱 '+esc(m.contact)+'<br>':''}${m.email?'✉️ '+esc(m.email):''}</div>`:''}
+        ${m.note?`<div class="member-note">💬 ${esc(m.note)}</div>`:''}
+      </div>
+      <div class="member-acts">
+        <button class="ia" onclick="openEditMember('${m.id}')" title="編集">✏️</button>
+        <button class="ia" onclick="deleteMember('${m.id}')" title="削除">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('main').innerHTML=`
+  <div class="page-screen" style="max-width:1000px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
+      <h2 style="margin-bottom:0">👥 部員名簿</h2>
+      <button onclick="openAddMember()" style="background:var(--soba);color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px">＋ 部員を追加</button>
+    </div>
+    <p class="page-sub">全イベント共通の名簿です</p>
+    ${statsHTML}
+    ${filterBar}
+    <div class="member-grid">${cards||`<p style="color:var(--muted);font-size:14px;padding:20px 0">部員が登録されていません。「＋ 部員を追加」から登録してください。</p>`}</div>
+  </div>`;
+}
+
+function setMemberFilter(g){ memberFilter=g; renderMembersScreen(); }
+
+function openAddMember(){
+  memberEditId=null;
+  document.getElementById('mm-title').textContent='👤 部員を登録';
+  ['mm-name','mm-kana','mm-contact','mm-email','mm-note'].forEach(id=>{ document.getElementById(id).value=''; });
+  document.getElementById('mm-grade').value='1年';
+  document.getElementById('mm-role').value='部員';
+  openModal('member-modal');
+}
+
+function openEditMember(id){
+  const m = S.members[id];
+  if(!m) return;
+  memberEditId = id;
+  document.getElementById('mm-title').textContent='✏️ 部員を編集';
+  document.getElementById('mm-name').value    = m.name    || '';
+  document.getElementById('mm-kana').value    = m.kana    || '';
+  document.getElementById('mm-grade').value   = m.grade   || '1年';
+  document.getElementById('mm-role').value    = m.role    || '部員';
+  document.getElementById('mm-contact').value = m.contact || '';
+  document.getElementById('mm-email').value   = m.email   || '';
+  document.getElementById('mm-note').value    = m.note    || '';
+  openModal('member-modal');
+}
+
+function saveMember(){
+  const name = document.getElementById('mm-name').value.trim();
+  if(!name){ toast('氏名を入力してください'); return; }
+  if(!S.members) S.members={};
+  const id = memberEditId || uid();
+  S.members[id] = {
+    id,
+    name,
+    kana:    document.getElementById('mm-kana').value.trim(),
+    grade:   document.getElementById('mm-grade').value,
+    role:    document.getElementById('mm-role').value,
+    contact: document.getElementById('mm-contact').value.trim(),
+    email:   document.getElementById('mm-email').value.trim(),
+    note:    document.getElementById('mm-note').value.trim(),
+    updatedAt: nowStr(),
+  };
+  closeModal('member-modal');
+  persist();
+  toast(memberEditId ? '✅ 部員情報を更新しました' : `✅ ${name} を登録しました`);
+  memberEditId = null;
+}
+
+function deleteMember(id){
+  const m = S.members[id];
+  if(!confirm(`「${m?.name}」を名簿から削除しますか？`)) return;
+  delete S.members[id];
+  persist();
+  toast('削除しました');
+}
+
+async function exportMemberPDF(){
+  const all = Object.values(S.members||{}).sort((a,b)=>{
+    const go={'1年':1,'2年':2,'3年':3,'顧問':4,'OB/OG':5};
+    return (go[a.grade]||9)-(go[b.grade]||9) || (a.name||'').localeCompare(b.name||'');
+  });
+  if(!all.length){ toast('部員が登録されていません'); return; }
+
+  const rows = all.map((m,i)=>`<tr style="background:${i%2?'#FAF7F2':'#fff'}">
+    <td style="padding:6px 10px;border:1px solid #DDD;font-size:12px;font-weight:700">${esc(m.name||'')}</td>
+    <td style="padding:6px 10px;border:1px solid #DDD;font-size:11px;color:#555">${esc(m.kana||'')}</td>
+    <td style="padding:6px 10px;border:1px solid #DDD;font-size:12px;text-align:center;color:${GRADE_COLOR[m.grade]||'#333'};font-weight:700">${esc(m.grade||'')}</td>
+    <td style="padding:6px 10px;border:1px solid #DDD;font-size:12px;text-align:center">${esc(m.role||'')}</td>
+    <td style="padding:6px 10px;border:1px solid #DDD;font-size:11px;color:#555">${esc(m.contact||'')}${m.email?'<br>'+esc(m.email):''}</td>
+    <td style="padding:6px 10px;border:1px solid #DDD;font-size:11px;color:#555">${esc(m.note||'')}</td>
+  </tr>`).join('');
+
+  const area = document.getElementById('pdf-area');
+  area.innerHTML=`<style>@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+  *{box-sizing:border-box;font-family:'Noto Sans JP',sans-serif}</style>
+  <div style="padding:32px 40px;background:#fff;width:820px">
+    <div style="text-align:center;border-bottom:3px solid #5C3D11;padding-bottom:12px;margin-bottom:18px">
+      <h1 style="font-size:20px;font-weight:900;color:#5C3D11">そば部　部員名簿</h1>
+      <p style="font-size:12px;color:#666;margin-top:4px">啓新高等学校 そば部　｜　${all.length}名　｜　作成：${nowStr()}</p>
+    </div>
+    <table style="width:100%;border-collapse:collapse">
+      <tr style="background:#5C3D11;color:#fff">
+        <th style="padding:6px 10px;font-size:11px;text-align:left;width:18%">氏名</th>
+        <th style="padding:6px 10px;font-size:11px;text-align:left;width:17%">よみがな</th>
+        <th style="padding:6px 10px;font-size:11px;text-align:center;width:10%">学年</th>
+        <th style="padding:6px 10px;font-size:11px;text-align:center;width:10%">役職</th>
+        <th style="padding:6px 10px;font-size:11px;text-align:left;width:23%">連絡先</th>
+        <th style="padding:6px 10px;font-size:11px;text-align:left">備考</th>
+      </tr>${rows}
+    </table>
+  </div>`;
+
+  await document.fonts.ready;
+  await new Promise(r=>setTimeout(r,400));
+  try{
+    const canvas=await html2canvas(area,{scale:2,useCORS:true,backgroundColor:'#fff',width:820,windowWidth:820,logging:false});
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight();
+    const fullH=canvas.height*pw/canvas.width;
+    let y=0,page=0;
+    while(y<fullH){
+      if(page>0) pdf.addPage();
+      const srcY=y/fullH*canvas.height;
+      const sliceH=Math.min(ph/fullH*canvas.height, canvas.height-srcY);
+      const sc=document.createElement('canvas');
+      sc.width=canvas.width; sc.height=Math.round(sliceH);
+      sc.getContext('2d').drawImage(canvas,0,srcY,canvas.width,sliceH,0,0,canvas.width,sliceH);
+      pdf.addImage(sc.toDataURL('image/jpeg',.96),'JPEG',0,0,pw,ph);
+      y+=ph; page++;
+    }
+    pdf.save(`そば部_部員名簿_${todayStr().replace(/-/g,'')}.pdf`);
+    toast('✅ 名簿PDFを保存しました',3000);
+  }catch(e){ alert('PDF生成エラー:\n'+e.message); }
+  area.innerHTML='';
+}
+
+// ─── noEvMsg helper ───
+function noEvMsg(){ return '<div style="padding:40px;color:var(--muted);font-size:14px;text-align:center">左のパネルからイベントを選択してください。</div>'; }
+
+
+function buildApvPdfHTML(type,role){
+  const apv=S.approvals?.[currentEvent]?.[type]?.[role]||{};
+  const colorMap={role:'#1A5E3A',captain:'#1A3E7C',advisor:'#D97706'};
+  const cells=APV_STEPS.map(s=>{
+    const a=apv[s.key];
+    const done=!!a?.done;
+    const bg=done?({role:'#EDF7F2',captain:'#EEF3FB',advisor:'#FFF7E6'}[s.key]):'#fff';
+    return `<td style="border:1px solid #CCC;padding:8px 10px;width:33%;vertical-align:top;background:${bg}">
+      <div style="font-size:10px;font-weight:700;color:${colorMap[s.key]};margin-bottom:4px">${s.icon} ${s.label}</div>
+      <div style="font-size:11px;color:#333;min-height:18px">${done?esc(a.by):''}</div>
+      <div style="font-size:10px;color:#666;margin-top:2px">${done?esc(a.at):''}</div>
+      <div style="border-top:1px solid #DDD;margin-top:8px;padding-top:4px;font-size:10px;color:#999">${done?'確認済み ✅':'（未確認）'}</div>
+    </td>`;
+  }).join('');
+  return `<table style="width:100%;border-collapse:collapse;margin-top:8px">
+    <tr style="background:#F5F0E8">
+      <th colspan="3" style="padding:5px 8px;border:1px solid #CCC;text-align:left;font-size:11px;font-weight:700;color:#5C3D11">🔏 確認・承認欄</th>
+    </tr>
+    <tr>${cells}</tr>
+  </table>`;
+}
+
+// ═══════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+function toast(msg,dur=2400){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),dur);
+}
+function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function todayStr(){const d=new Date();return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`}
+function z(n){return String(n).padStart(2,'0')}
+function nowStr(){const d=new Date();return `${d.getFullYear()}/${z(d.getMonth()+1)}/${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`}
+function uid(){return 'id'+Date.now()+Math.random().toString(36).slice(2,7)}
+function deepClone(o){return JSON.parse(JSON.stringify(o))}
+</script>
+</body>
+</html>
